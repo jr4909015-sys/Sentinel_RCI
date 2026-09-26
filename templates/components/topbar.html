@@ -1,0 +1,46 @@
+<header class="dash-topbar">
+  <div class="dash-topbar-left">
+    <button class="sidebar-collapse-btn mobile-menu-btn" id="mobileMenuBtn" aria-label="Open menu">
+      <span class="material-symbols-outlined mi-16" aria-hidden="true">menu</span>
+    </button>
+    <div class="dash-breadcrumb">
+      <span class="dash-breadcrumb-root">SENTINEL</span>
+      <span class="material-symbols-outlined mi-14" aria-hidden="true">chevron_right</span>
+      <span>{{ request.resolver_match.url_name|title }}</span>
+    </div>
+  </div>
+  <div class="dash-topbar-right">
+    <div class="dash-clock" id="dashClock">--:--:--</div>
+    {% if user.role != 'reporter' %}
+    <div class="dash-topbar-divider"></div>
+      {% if request.resolver_match.url_name != 'dashboard' and request.resolver_match.url_name != 'analytics' and request.resolver_match.url_name != 'settings' and request.resolver_match.url_name != 'livemap' and request.resolver_match.url_name != 'report' %}
+    <button class="dash-icon-btn" title="Search" id="globalSearchBtn" aria-label="Search">
+      <span class="material-symbols-outlined mi-16" aria-hidden="true">search</span>
+    </button>
+      {% endif %}
+
+    <!-- Notification button + dropdown -->
+    <div class="notif-wrap" id="notifWrap">
+      <button class="dash-icon-btn notif-btn" id="notifBtn" title="Notifications" aria-label="Notifications">
+        <span class="material-symbols-outlined mi-16" aria-hidden="true">notifications</span>
+        <span class="notif-dot" id="notifDot"></span>
+      </button>
+
+      <div class="notif-dropdown" id="notifDropdown">
+        <div class="notif-dropdown-header">
+          <span class="notif-dropdown-title">Notifications</span>
+          <span class="notif-live-badge"><span class="pulse"></span> LIVE</span>
+        </div>
+        <div class="notif-list" id="notifList">
+          <div class="notif-empty">No new notifications</div>
+        </div>
+      <div class="notif-dropdown-footer">
+        <button class="notif-clear-selected-btn" id="notifClearSelected" style="display:none;">Clear selected</button>
+        <button class="notif-clear-btn" id="notifClear">Clear all</button>
+      </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</header>

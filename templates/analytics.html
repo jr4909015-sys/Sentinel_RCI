@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Analytics — Sentinel{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'analytics.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dash-layout">
+  {% include 'components/sidebar.html' with sidebar_incidents_badge=sidebar_incidents_badge %}
+  <div class="dash-main">
+
+    {% include 'components/topbar.html' %}
+
+    <div class="dash-content">
+
+      <!-- ── PAGE HEADER ── -->
+      <div class="anl-page-header reveal">
+        <div class="anl-page-header-left">
+          <div class="section-label">Analyze</div>
+          <h1 class="anl-page-title">Analytics</h1>
+          <p class="anl-page-sub">Incident intelligence, trend analysis, and operational metrics across all zones.</p>
+        </div>
+        <div class="anl-page-header-right">
+          <div class="anl-date-range" id="dateRangeDisplay">
+            <span class="material-symbols-outlined mi-16" aria-hidden="true">calendar_month</span>
+            <span id="dateRangeLabel">Last 30 Days</span>
+          </div>
+          <div class="anl-range-btns" id="rangeButtons">
+            <button class="anl-range-btn" data-range="7">7D</button>
+            <button class="anl-range-btn active" data-range="30">30D</button>
+            <button class="anl-range-btn" data-range="90">90D</button>
+            <button class="anl-range-btn" data-range="365">1Y</button>
+          </div>
+          <button class="btn-ghost anl-export-btn" id="anlExportBtn">
+            <span class="material-symbols-outlined mi-16" aria-hidden="true">download</span>
+            Export Report
+          </button>
+        </div>
+      </div>
+
+      <!-- ── KPI STRIP ── -->
+      <div class="anl-kpi-strip reveal">
+        <div class="anl-kpi-card">
+          <div class="anl-kpi-top">
+            <span class="anl-kpi-label">Total Incidents</span>
+            <span class="anl-kpi-icon"><span class="material-symbols-outlined mi-16" aria-hidden="true">hexagon</span></span>
+          </div>
+          <div class="anl-kpi-num" id="kpiTotal">—</div>
+          <div class="anl-kpi-delta" id="kpiTotalDelta"></div>
+          <div class="anl-kpi-bar"><div class="anl-kpi-bar-fill" id="kpiTotalBar" style="background:var(--gold);width:0%"></div></div>
+        </div>
+        <div class="anl-kpi-card">
+          <div class="anl-kpi-top">
+            <span class="anl-kpi-label">Active Now</span>
+            <span class="anl-kpi-icon" style="color:var(--danger)"><span class="material-symbols-outlined mi-dot" aria-hidden="true">fiber_manual_record</span></span>
+          </div>
+          <div class="anl-kpi-num" style="color:var(--danger)" id="kpiActive">—</div>
+          <div class="anl-kpi-delta" id="kpiActiveDelta"></div>
+          <div class="anl-kpi-bar"><div class="anl-kpi-bar-fill" id="kpiActiveBar" style="background:var(--danger);width:0%"></div></div>
+        </div>
+        <div class="anl-kpi-card">
+          <div class="anl-kpi-top">
+            <span class="anl-kpi-label">Resolved</span>
+            <span class="anl-kpi-icon" style="color:var(--success)"><span class="material-symbols-outlined mi-16" aria-hidden="true">check</span></span>
+          </div>
+          <div class="anl-kpi-num" style="color:var(--success)" id="kpiResolved">—</div>
+          <div class="anl-kpi-delta" id="kpiResolvedDelta"></div>
+          <div class="anl-kpi-bar"><div class="anl-kpi-bar-fill" id="kpiResolvedBar" style="background:var(--success);width:0%"></div></div>
+        </div>
+        <div class="anl-kpi-card">
+          <div class="anl-kpi-top">
+            <span class="anl-kpi-label">Resolution Rate</span>
+            <span class="anl-kpi-icon" style="color:#B394FF">%</span>
+          </div>
+          <div class="anl-kpi-num" style="color:#B394FF" id="kpiRate">—</div>
+          <div class="anl-kpi-delta" id="kpiRateDelta"></div>
+          <div class="anl-kpi-bar"><div class="anl-kpi-bar-fill" id="kpiRateBar" style="background:#B394FF;width:0%"></div></div>
+        </div>
+      </div>
+
+      <!-- ── ROW 1: Trend + Type Breakdown ── -->
+      <div class="anl-row anl-row-main reveal">
+
+        <!-- Trend Chart -->
+        <div class="anl-panel anl-panel-lg">
+          <div class="anl-panel-header anl-panel-header-wrap">
+            <span class="anl-panel-title">Incident Trend</span>
+            <div class="anl-panel-filters">
+              <div class="anl-chip-group" id="trendTypeFilter">
+                <button class="anl-chip active" data-type="all">All</button>
+                <button class="anl-chip" data-type="fire">
+                  <span class="anl-chip-dot" style="background:#FF4444"></span>Fire
+                </button>
+                <button class="anl-chip" data-type="med">
+                  <span class="anl-chip-dot" style="background:#F5C400"></span>Medical
+                </button>
+                <button class="anl-chip" data-type="sec">
+                  <span class="anl-chip-dot" style="background:#B394FF"></span>Security
+                </button>
+                <button class="anl-chip" data-type="accident">
+                  <span class="anl-chip-dot" style="background:#FF9500"></span>Accident
+                </button>
+              </div>
+              <select class="anl-select" id="trendStatusFilter">
+                <option value="all">All Statuses</option>
+                <option value="active">Active</option>
+                <option value="resolved">Resolved</option>
+              </select>
+            </div>
+          </div>
+          <div class="anl-chart-area" id="trendChart">
+            <canvas id="trendCanvas"></canvas>
+            <div class="anl-chart-loading" id="trendLoading">
+              <span class="anl-spinner"></span> Loading…
+            </div>
+          </div>
+          <div class="anl-chart-footer">
+            <span class="anl-chart-foot-label" id="trendFootLabel">Daily incident counts by type over selected period</span>
+          </div>
+        </div>
+
+        <!-- Type Donut -->
+        <div class="anl-panel anl-panel-sm">
+          <div class="anl-panel-header anl-panel-header-col">
+            <span class="anl-panel-title">Type Breakdown</span>
+            <select class="anl-select anl-select-full" id="donutStatusFilter">
+              <option value="all">All Statuses</option>
+              <option value="active">Active</option>
+              <option value="resolved">Resolved</option>
+            </select>
+          </div>
+          <div class="anl-donut-wrap">
+            <canvas id="donutCanvas" width="200" height="200"></canvas>
+            <div class="anl-donut-center">
+              <span class="anl-donut-total" id="donutTotal">—</span>
+              <span class="anl-donut-label">total</span>
+            </div>
+          </div>
+          <div class="anl-type-list" id="typeList"></div>
+        </div>
+
+      </div>
+
+      <!-- ── ROW 2: Location + Status Funnel ── -->
+      <div class="anl-row anl-row-split reveal">
+
+        <div class="anl-panel">
+          <div class="anl-panel-header">
+            <span class="anl-panel-title">Incidents by Location</span>
+            <span class="anl-panel-sub" id="locationTotal"></span>
+          </div>
+          <div class="anl-location-list" id="locationList"></div>
+        </div>
+
+        <div class="anl-panel">
+          <div class="anl-panel-header">
+            <span class="anl-panel-title">Status Distribution</span>
+          </div>
+          <div class="anl-status-funnel" id="statusFunnel"></div>
+        </div>
+
+      </div>
+
+      <!-- ── ROW 3: Hourly Activity ── -->
+      <div class="anl-row reveal">
+        <div class="anl-panel">
+          <div class="anl-panel-header">
+            <span class="anl-panel-title">24h Activity Pattern</span>
+            <span class="anl-panel-sub">Peak hours highlighted</span>
+          </div>
+          <div class="anl-hourly-chart" id="hourlyChart"></div>
+          <div class="anl-hourly-labels" id="hourlyLabels"></div>
+        </div>
+      </div>
+
+
+
+    </div><!-- /dash-content -->
+  </div><!-- /dash-main -->
+</div><!-- /dash-layout -->
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'analytics.js' %}"></script>
+{% endblock %}

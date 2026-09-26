@@ -1,0 +1,140 @@
+<!-- templates/core/base.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sentinel{% endblock %}</title>
+
+    <!-- Example CSS -->
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
+    <link rel="stylesheet" href="{% static 'chatbot.css' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=IBM+Plex+Mono:wght@400;500;700&family=Syne+Mono&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23F5C400' stroke-width='2'%3E%3Cpath d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/%3E%3C/svg%3E" type="image/svg+xml">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+    <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <style>
+        /* Toast Notification Styles */
+        .toast-container {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            z-index: 10001;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+        .toast {
+            position: relative;
+            z-index: 10002;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 14px 18px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            letter-spacing: 0.08em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateY(20px);
+            opacity: 0;
+            transition: transform 0.3s, opacity 0.3s;
+            pointer-events: all;
+            min-width: 280px;
+            max-width: 360px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        .toast.success {
+            border-color: rgba(76, 175, 80, 0.4);
+            color: var(--success);
+        }
+        .toast.error {
+            border-color: rgba(255, 68, 68, 0.4);
+            color: var(--danger);
+        }
+        .toast.warning {
+            border-color: rgba(255, 149, 0, 0.4);
+            color: #FF9500;
+        }
+        .toast.info {
+            border-color: rgba(245, 196, 0, 0.4);
+            color: var(--gold);
+        }
+        .toast-icon {
+            flex-shrink: 0;
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .toast-message {
+            flex: 1;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+    
+    <!-- Django Messages as data attributes -->
+    {% if messages %}
+        {% for message in messages %}
+            <div data-django-message="{{ message.tags }}" style="display: none;">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+    
+    {% if request.user.is_authenticated %}
+    <!-- Sentinel Assistant -->
+    <div class="sentinel-chatbot" id="sentinelChatbot">
+        <input type="hidden" id="chatbotCsrfToken" value="{{ csrf_token }}">
+        <div class="sentinel-chat-panel" id="sentinelChatPanel">
+            <div class="sentinel-chat-head">
+                <div class="sentinel-chat-title">
+                    <div class="sentinel-chat-avatar"><span class="material-symbols-outlined mi-18" aria-hidden="true">shield</span></div>
+                    <div>
+                        <div class="sentinel-chat-name">SENTINEL ASSISTANT</div>
+                        <div class="sentinel-chat-status"><span class="material-symbols-outlined mi-dot" aria-hidden="true">fiber_manual_record</span> ONLINE • ML DECISION SUPPORT</div>
+                    </div>
+                </div>
+                <button class="sentinel-chat-close" id="sentinelChatClose" aria-label="Close"><span class="material-symbols-outlined mi-18" aria-hidden="true">close</span></button>
+            </div>
+            <div class="sentinel-chat-messages" id="sentinelChatMessages">
+                <div class="sentinel-chat-msg bot">Hello! I’m Sentinel Assistant. Describe an emergency or ask how to file an incident report.</div>
+            </div>
+            <div class="sentinel-chat-quick">
+                <button type="button" data-chat-message="How do I report an incident?">How to report?</button>
+                <button type="button" data-chat-message="There is smoke coming from Room 204.">Test FIRE</button>
+            </div>
+            <form class="sentinel-chat-form" id="sentinelChatForm">
+                <textarea class="sentinel-chat-input" id="sentinelChatInput" placeholder="Describe what happened..." aria-label="Chat message"></textarea>
+                <button class="sentinel-chat-send" type="submit" aria-label="Send"><span class="material-symbols-outlined mi-20" aria-hidden="true">send</span></button>
+            </form>
+        </div>
+        <button class="sentinel-chat-toggle" id="sentinelChatToggle" aria-label="Open Sentinel Assistant"><span class="material-symbols-outlined mi-24" aria-hidden="true">forum</span></button>
+    </div>
+    <script src="{% static 'chatbot.js' %}"></script>
+    {% endif %}
+
+    <main>
+        {% block content %}
+        <!-- Page content goes here -->
+        {% endblock %}
+    </main>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="{% static 'scripts.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

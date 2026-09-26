@@ -1,0 +1,688 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Settings — Sentinel{% endblock %}
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'settings.css' %}">
+{% endblock %}
+{% block content %}
+<div class="dash-layout">
+  {% include 'components/sidebar.html' with sidebar_incidents_badge=active_incidents_count %}
+
+  <div class="dash-main">
+    {% include 'components/topbar.html' %}
+
+    <div class="dash-content settings-content">
+
+      <!-- Page header -->
+      <div class="settings-page-header reveal">
+        <div class="settings-page-eyebrow">
+          <span class="eyebrow-line"></span>
+         ACCOUNT SETTINGS
+        </div>
+        <h1 class="settings-page-title">PROFILE <span class="title-accent">CONFIG</span></h1>
+        <p class="settings-page-sub">Manage your account credentials and identity parameters.</p>
+      </div>
+
+      <!-- Alert banners -->
+      <div id="settingsSuccess" class="settings-alert success" style="display:none;">
+        <span class="alert-icon"><span class="material-symbols-outlined mi-16" aria-hidden="true">check</span></span>
+        <span id="settingsSuccessMsg">Changes saved successfully.</span>
+      </div>
+      <div id="settingsError" class="settings-alert error" style="display:none;">
+        <span class="alert-icon"><span class="material-symbols-outlined mi-16" aria-hidden="true">close</span></span>
+        <span id="settingsErrorMsg">An error occurred. Please try again.</span>
+      </div>
+
+      <!-- Two-column layout -->
+      <div class="settings-grid">
+
+        <!-- ── LEFT: Profile Form ── -->
+        <div class="settings-panel reveal">
+          <div class="settings-panel-header">
+            <div class="settings-panel-title-wrap">
+              <span class="settings-panel-num">01</span>
+              <span class="settings-panel-title">IDENTITY PARAMETERS</span>
+            </div>
+            <span class="settings-panel-tag">PROFILE</span>
+          </div>
+
+          <div class="settings-panel-body">
+
+            <!-- Avatar block -->
+            <div class="settings-avatar-block">
+              <div class="settings-avatar" id="avatarDisplay">
+                {{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}
+              </div>
+              <div class="settings-avatar-meta">
+                <div class="settings-avatar-name" id="avatarName">
+                  {{ request.user.get_full_name|default:request.user.username }}
+                </div>
+                <div class="settings-avatar-role">{{ request.user.role|default:"OPERATOR"|upper }}</div>
+                <div class="settings-avatar-id">UID·{{ request.user.username|upper }}</div>
+              </div>
+            </div>
+
+            <div class="settings-divider"></div>
+
+            <form id="profileForm" method="POST" action="{% url 'settings_profile' %}">
+              {% csrf_token %}
+
+              <!-- Username -->
+              <div class="settings-field">
+                <label class="settings-label" for="id_username">
+                  <span class="label-dot"></span>USERNAME
+                </label>
+                <div class="settings-input-wrap">
+                  <input
+                    type="text"
+                    id="id_username"
+                    name="username"
+                    class="settings-input"
+                    value="{{ request.user.username }}"
+                    autocomplete="username"
+                    placeholder="Enter username"
+                  >
+                  <span class="settings-input-line"></span>
+                  <span class="settings-input-icon">@</span>
+                </div>
+                <div class="settings-field-hint">Unique identifier used for login.</div>
+              </div>
+
+              <!-- First name -->
+              <div class="settings-field">
+                <label class="settings-label" for="id_first_name">
+                  <span class="label-dot"></span>FIRST NAME
+                </label>
+                <div class="settings-input-wrap">
+                  <input
+                    type="text"
+                    id="id_first_name"
+                    name="first_name"
+                    class="settings-input"
+                    value="{{ request.user.first_name }}"
+                    placeholder="Enter first name"
+                  >
+                  <span class="settings-input-line"></span>
+                </div>
+              </div>
+
+              <!-- Middle name -->
+              <div class="settings-field">
+                <label class="settings-label" for="id_middle_name">
+                  <span class="label-dot"></span>MIDDLE NAME
+                  <span class="label-optional">OPTIONAL</span>
+                </label>
+                <div class="settings-input-wrap">
+                  <input
+                    type="text"
+                    id="id_middle_name"
+                    name="middle_name"
+                    class="settings-input"
+                    value="{{ request.user.middle_name|default:'' }}"
+                    placeholder="Enter middle name"
+                  >
+                  <span class="settings-input-line"></span>
+                </div>
+              </div>
+
+              <!-- Last name -->
+              <div class="settings-field">
+                <label class="settings-label" for="id_last_name">
+                  <span class="label-dot"></span>LAST NAME
+                </label>
+                <div class="settings-input-wrap">
+                  <input
+                    type="text"
+                    id="id_last_name"
+                    name="last_name"
+                    class="settings-input"
+                    value="{{ request.user.last_name }}"
+                    placeholder="Enter last name"
+                  >
+                  <span class="settings-input-line"></span>
+                </div>
+              </div>
+
+              <!-- Student ID (Read-only) -->
+              <div class="settings-field">
+                <label class="settings-label" for="id_student_id">
+                  <span class="label-dot"></span>STUDENT ID
+                  <span class="label-optional">READ-ONLY</span>
+                </label>
+                <div class="settings-input-wrap">
+                  <input
+                    type="text"
+                    id="id_student_id"
+                    name="student_id"
+                    class="settings-input"
+                    value="{{ request.user.student_id }}"
+                    readonly
+                    disabled
+                  >
+                  <span class="settings-input-line"></span>
+                </div>
+                <div class="settings-field-hint">Your unique student identifier. Contact administrator to change.</div>
+              </div>
+
+              <div class="settings-form-footer">
+                <button type="button" class="settings-btn-ghost" onclick="resetProfileForm()">
+                  RESET
+                </button>
+                <button type="submit" class="settings-btn-primary" id="profileSaveBtn">
+                  <span class="btn-label">SAVE CHANGES</span>
+                  <span class="btn-arrow"><span class="material-symbols-outlined mi-16" aria-hidden="true">arrow_forward</span></span>
+                  <span class="btn-spinner" style="display:none;"><span class="material-symbols-outlined mi-16 mi-spin" aria-hidden="true">progress_activity</span></span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- ── RIGHT: Password Form ── -->
+        <div class="settings-right-col">
+
+          <div class="settings-panel reveal">
+            <div class="settings-panel-header">
+              <div class="settings-panel-title-wrap">
+                <span class="settings-panel-num">02</span>
+                <span class="settings-panel-title">SECURITY CREDENTIALS</span>
+              </div>
+              <span class="settings-panel-tag danger">AUTH</span>
+            </div>
+
+            <div class="settings-panel-body">
+
+              <div class="settings-security-status">
+                <div class="sec-status-dot"></div>
+                <div class="sec-status-text">
+                  <div class="sec-status-label">PASSWORD STATUS</div>
+                  <div class="sec-status-value">ACTIVE / VERIFIED</div>
+                </div>
+                <div class="sec-status-shield"><span class="material-symbols-outlined mi-24" aria-hidden="true">shield</span></div>
+              </div>
+
+              <div class="settings-divider"></div>
+
+              <form id="passwordForm" method="POST" action="{% url 'settings_password' %}">
+                {% csrf_token %}
+
+                <!-- Current password -->
+                <div class="settings-field">
+                  <label class="settings-label" for="id_old_password">
+                    <span class="label-dot danger"></span>CURRENT PASSWORD
+                  </label>
+                  <div class="settings-input-wrap">
+                    <input
+                      type="password"
+                      id="id_old_password"
+                      name="old_password"
+                      class="settings-input"
+                      placeholder="Enter current password"
+                      autocomplete="current-password"
+                    >
+                    <span class="settings-input-line"></span>
+                    <button type="button" class="settings-eye-btn" onclick="togglePwd('id_old_password', 'eye0')" tabindex="-1" aria-label="Toggle password visibility">
+                      <span class="material-symbols-outlined mi-16" aria-hidden="true">visibility</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="settings-divider"></div>
+
+                <!-- New password -->
+                <div class="settings-field">
+                  <label class="settings-label" for="id_new_password1">
+                    <span class="label-dot"></span>NEW PASSWORD
+                  </label>
+                  <div class="settings-input-wrap">
+                    <input
+                      type="password"
+                      id="id_new_password1"
+                      name="new_password1"
+                      class="settings-input"
+                      placeholder="Enter new password"
+                      autocomplete="new-password"
+                      oninput="checkPasswordStrength(this.value)"
+                    >
+                    <span class="settings-input-line"></span>
+                    <button type="button" class="settings-eye-btn" onclick="togglePwd('id_new_password1', 'eye1')" tabindex="-1" aria-label="Toggle password visibility">
+                      <span class="material-symbols-outlined mi-16" aria-hidden="true">visibility</span>
+                    </button>
+                  </div>
+                  <!-- Strength meter -->
+                  <div class="pwd-strength-wrap" id="pwdStrengthWrap" style="display:none;">
+                    <div class="pwd-strength-bar">
+                      <div class="pwd-strength-fill" id="pwdStrengthFill"></div>
+                    </div>
+                    <span class="pwd-strength-label" id="pwdStrengthLabel">WEAK</span>
+                  </div>
+                </div>
+
+                <!-- Confirm new password -->
+                <div class="settings-field">
+                  <label class="settings-label" for="id_new_password2">
+                    <span class="label-dot"></span>CONFIRM NEW PASSWORD
+                  </label>
+                  <div class="settings-input-wrap">
+                    <input
+                      type="password"
+                      id="id_new_password2"
+                      name="new_password2"
+                      class="settings-input"
+                      placeholder="Repeat new password"
+                      autocomplete="new-password"
+                      oninput="checkPasswordMatch()"
+                    >
+                    <span class="settings-input-line"></span>
+                    <button type="button" class="settings-eye-btn" onclick="togglePwd('id_new_password2', 'eye2')" tabindex="-1" aria-label="Toggle password visibility">
+                      <span class="material-symbols-outlined mi-16" aria-hidden="true">visibility</span>
+                    </button>
+                  </div>
+                  <div class="settings-field-hint" id="pwdMatchHint" style="display:none;"></div>
+                </div>
+
+                <div class="settings-form-footer">
+                  <button type="button" class="settings-btn-ghost" onclick="resetPasswordForm()">
+                    CLEAR
+                  </button>
+                  <button type="submit" class="settings-btn-primary" id="passwordSaveBtn">
+                    <span class="btn-label">UPDATE PASSWORD</span>
+                    <span class="btn-arrow"><span class="material-symbols-outlined mi-16" aria-hidden="true">arrow_forward</span></span>
+                    <span class="btn-spinner" style="display:none;"><span class="material-symbols-outlined mi-16 mi-spin" aria-hidden="true">progress_activity</span></span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Session info card -->
+          <div class="settings-info-card reveal">
+            <div class="info-card-header">
+              <span class="info-card-label">SESSION INFO</span>
+              <span class="info-card-live"><span class="dot-live"></span> ACTIVE</span>
+            </div>
+            <div class="info-card-rows">
+              <div class="info-card-row">
+                <span class="info-card-key">OPERATOR</span>
+                <span class="info-card-val">{{ request.user.username|upper }}</span>
+              </div>
+              <div class="info-card-row">
+                <span class="info-card-key">ROLE</span>
+                <span class="info-card-val gold">{{ request.user.role|default:"OPERATOR"|upper }}</span>
+              </div>
+              <div class="info-card-row">
+                <span class="info-card-key">JOINED</span>
+                <span class="info-card-val">{{ request.user.date_joined|date:"Y-m-d" }}</span>
+              </div>
+              <div class="info-card-row">
+                <span class="info-card-key">LAST LOGIN</span>
+                <span class="info-card-val">{{ request.user.last_login|date:"Y-m-d H:i" }}</span>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /right col -->
+      </div><!-- /settings-grid -->
+
+      <div class="settings-panel reveal auditlog-panel fullwidth-auditlog">
+        <div class="settings-panel-header">
+          <div class="settings-panel-title-wrap">
+            <span class="settings-panel-num">03</span>
+            <span class="settings-panel-title">AUDIT LOG</span>
+          </div>
+          <span class="settings-panel-tag">HISTORY</span>
+        </div>
+        <div class="settings-panel-body">
+          <div class="auditlog-table-wrap">
+            <table class="auditlog-table">
+              <thead>
+                <tr>
+                  <th>ACTION</th>
+                  <th>MODEL</th>
+                  <th>OBJECT</th>
+                  <th>WHEN</th>
+                  <th>DETAILS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for log in audit_logs %}
+                <tr>
+                  <td>{{ log.get_action_display }}</td>
+                  <td>{{ log.model_name }}</td>
+                  <td>{{ log.object_id }}</td>
+                  <td>{{ log.timestamp|date:"Y-m-d H:i" }}</td>
+                  <td class="auditlog-detail-cell">
+                    {% if log.display_changes %}
+                    <ul class="auditlog-detail-list">
+                      {% for item in log.display_changes %}
+                      <li>
+                        <span class="auditlog-label">{{ item.label }}</span>
+                        <span class="auditlog-value">{{ item.value }}</span>
+                      </li>
+                      {% endfor %}
+                    </ul>
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="empty-row">No audit records found.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="pagination-row">
+            <span class="pagination-info">Page {{ audit_logs.number }} of {{ audit_logs.paginator.num_pages }}</span>
+            <nav class="pagination-controls" aria-label="Audit log pagination">
+              {% if audit_logs.has_previous %}
+                <a class="pagination-link" href="?page={{ audit_logs.previous_page_number }}" data-page="{{ audit_logs.previous_page_number }}">Previous</a>
+              {% else %}
+                <span class="pagination-link disabled">Previous</span>
+              {% endif %}
+
+              {% for page_num in audit_logs.paginator.page_range %}
+                {% if page_num == audit_logs.number %}
+                  <span class="pagination-link current">{{ page_num }}</span>
+                {% else %}
+                  <a class="pagination-link" href="?page={{ page_num }}" data-page="{{ page_num }}">{{ page_num }}</a>
+                {% endif %}
+              {% endfor %}
+
+              {% if audit_logs.has_next %}
+                <a class="pagination-link" href="?page={{ audit_logs.next_page_number }}" data-page="{{ audit_logs.next_page_number }}">Next</a>
+              {% else %}
+                <span class="pagination-link disabled">Next</span>
+              {% endif %}
+            </nav>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /dash-content -->
+  </div><!-- /dash-main -->
+</div><!-- /dash-layout -->
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* ── PROFILE FORM ── */
+document.getElementById('profileForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const btn = document.getElementById('profileSaveBtn');
+  setLoading(btn, true);
+
+  const fd = new FormData(this);
+  fetch(this.action, {
+    method: 'POST',
+    body: fd,
+    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    credentials: 'same-origin',
+  })
+  .then(r => r.json())
+  .then(data => {
+    setLoading(btn, false);
+    if (data.success) {
+      showAlert('success', data.message || 'Profile updated successfully.');
+      updateAvatarDisplay(fd);
+    } else {
+      showAlert('error', data.error || 'Failed to update profile.');
+    }
+  })
+  .catch(() => {
+    setLoading(btn, false);
+    showAlert('error', 'Network error. Please try again.');
+  });
+});
+
+function updateAvatarDisplay(fd) {
+  const fn = (fd.get('first_name') || '').trim();
+  const ln = (fd.get('last_name') || '').trim();
+  const un = (fd.get('username') || '').trim();
+
+  const initials = (fn.slice(0,1) + ln.slice(0,1)).toUpperCase() || un.slice(0,2).toUpperCase();
+  const display = document.getElementById('avatarDisplay');
+  const name    = document.getElementById('avatarName');
+  const uid     = document.getElementById('avatarId');
+  const uidBadge = document.querySelector('.settings-avatar-id');
+
+  if (display) display.textContent = initials;
+  if (name) name.textContent = [fn, ln].filter(Boolean).join(' ') || un;
+  if (uidBadge) uidBadge.textContent = 'UID·' + un.toUpperCase();
+}
+
+function resetProfileForm() {
+  document.getElementById('profileForm').reset();
+  hideAlerts();
+}
+
+/* ── PASSWORD FORM ── */
+document.getElementById('passwordForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const p1 = document.getElementById('id_new_password1').value;
+  const p2 = document.getElementById('id_new_password2').value;
+  if (p1 !== p2) {
+    showAlert('error', 'New passwords do not match.');
+    return;
+  }
+
+  const btn = document.getElementById('passwordSaveBtn');
+  setLoading(btn, true);
+
+  const fd = new FormData(this);
+  fetch(this.action, {
+    method: 'POST',
+    body: fd,
+    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    credentials: 'same-origin',
+  })
+  .then(r => r.json())
+  .then(data => {
+    setLoading(btn, false);
+    if (data.success) {
+      showAlert('success', data.message || 'Password updated successfully.');
+      this.reset();
+      document.getElementById('pwdStrengthWrap').style.display = 'none';
+      document.getElementById('pwdMatchHint').style.display = 'none';
+    } else {
+      showAlert('error', data.error || 'Failed to update password.');
+    }
+  })
+  .catch(() => {
+    setLoading(btn, false);
+    showAlert('error', 'Network error. Please try again.');
+  });
+});
+
+function resetPasswordForm() {
+  document.getElementById('passwordForm').reset();
+  document.getElementById('pwdStrengthWrap').style.display = 'none';
+  document.getElementById('pwdMatchHint').style.display = 'none';
+  hideAlerts();
+}
+
+/* ── PASSWORD STRENGTH ── */
+function checkPasswordStrength(val) {
+  const wrap  = document.getElementById('pwdStrengthWrap');
+  const fill  = document.getElementById('pwdStrengthFill');
+  const label = document.getElementById('pwdStrengthLabel');
+
+  if (!val) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'flex';
+
+  let score = 0;
+  if (val.length >= 8)                          score++;
+  if (val.length >= 12)                         score++;
+  if (/[A-Z]/.test(val) && /[a-z]/.test(val))  score++;
+  if (/\d/.test(val))                           score++;
+  if (/[^A-Za-z0-9]/.test(val))                score++;
+
+  const levels = [
+    { pct: '15%', color: 'var(--danger)',  text: 'WEAK' },
+    { pct: '35%', color: 'var(--danger)',  text: 'POOR' },
+    { pct: '55%', color: 'var(--gold)',    text: 'FAIR' },
+    { pct: '75%', color: 'var(--gold)',    text: 'GOOD' },
+    { pct: '100%',color: 'var(--success)', text: 'STRONG' },
+  ];
+  const lv = levels[Math.min(score, 4)];
+  fill.style.width = lv.pct;
+  fill.style.background = lv.color;
+  label.textContent = lv.text;
+  label.style.color = lv.color;
+}
+
+function checkPasswordMatch() {
+  const p1   = document.getElementById('id_new_password1').value;
+  const p2   = document.getElementById('id_new_password2').value;
+  const hint = document.getElementById('pwdMatchHint');
+
+  if (!p2) { hint.style.display = 'none'; return; }
+  hint.style.display = 'block';
+
+  if (p1 === p2) {
+    hint.innerHTML = '<span class="material-symbols-outlined mi-16" aria-hidden="true">check</span> Passwords match';
+    hint.style.color = 'var(--success)';
+  } else {
+    hint.innerHTML = '<span class="material-symbols-outlined mi-16" aria-hidden="true">close</span> Passwords do not match';
+    hint.style.color = 'var(--danger)';
+  }
+}
+
+/* ── EYE TOGGLE (Material Symbols) ── */
+function togglePwd(inputId) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const isHidden = input.type === 'password';
+  input.type = isHidden ? 'text' : 'password';
+  const btn = input.closest('.settings-input-wrap')?.querySelector('.settings-eye-btn .material-symbols-outlined');
+  if (btn) btn.textContent = isHidden ? 'visibility_off' : 'visibility';
+}
+
+/* ── ALERTS ── */
+function showAlert(type, msg) {
+  hideAlerts();
+  const el  = document.getElementById(type === 'success' ? 'settingsSuccess' : 'settingsError');
+  const txt = document.getElementById(type === 'success' ? 'settingsSuccessMsg' : 'settingsErrorMsg');
+  if (el && txt) {
+    txt.textContent = msg;
+    el.style.display = 'flex';
+    el.classList.add('visible');
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    setTimeout(() => { el.classList.remove('visible'); setTimeout(() => { el.style.display = 'none'; }, 400); }, 5000);
+  }
+  if (typeof showToast === 'function') {
+    showToast(msg, type === 'success' ? 'success' : 'error');
+  }
+}
+
+function hideAlerts() {
+  ['settingsSuccess','settingsError'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.style.display = 'none'; el.classList.remove('visible'); }
+  });
+}
+
+/* ── LOADING STATE ── */
+function setLoading(btn, state) {
+  const label   = btn.querySelector('.btn-label');
+  const arrow   = btn.querySelector('.btn-arrow');
+  const spinner = btn.querySelector('.btn-spinner');
+  btn.disabled = state;
+  if (state) {
+    if (label)   label.style.opacity  = '0.5';
+    if (arrow)   arrow.style.display  = 'none';
+    if (spinner) { spinner.style.display = 'inline'; spinner.classList.add('spin'); }
+  } else {
+    if (label)   label.style.opacity  = '1';
+    if (arrow)   arrow.style.display  = 'inline';
+    if (spinner) { spinner.style.display = 'none'; spinner.classList.remove('spin'); }
+  }
+}
+
+/* ── Input focus line ── */
+document.querySelectorAll('.settings-input').forEach(function(inp) {
+  const line = inp.parentNode.querySelector('.settings-input-line');
+  if (!line) return;
+  inp.addEventListener('focus',  () => line.style.width = '100%');
+  inp.addEventListener('blur',   () => line.style.width = '0');
+});
+
+function refreshAuditLogTable(data) {
+  const tbody = document.querySelector('.auditlog-table tbody');
+  const controls = document.querySelector('.pagination-controls');
+  if (!tbody || !controls) return;
+
+  tbody.innerHTML = data.audit_logs.length ? data.audit_logs.map(function(log) {
+    const details = log.changes.length
+      ? '<ul class="auditlog-detail-list">' + log.changes.map(function(item) {
+          return '<li><span class="auditlog-label">' + item.label + '</span><span class="auditlog-value">' + item.value + '</span></li>';
+        }).join('') + '</ul>'
+      : '-';
+
+    return '<tr>' +
+      '<td>' + log.action + '</td>' +
+      '<td>' + log.model_name + '</td>' +
+      '<td>' + log.object_id + '</td>' +
+      '<td>' + log.timestamp + '</td>' +
+      '<td class="auditlog-detail-cell">' + details + '</td>' +
+      '</tr>';
+  }).join('') : '<tr><td colspan="5" class="empty-row">No audit records found.</td></tr>';
+
+  const pageLinks = [];
+  if (data.pagination.has_previous) {
+    pageLinks.push('<a class="pagination-link" href="?page=' + data.pagination.previous_page + '" data-page="' + data.pagination.previous_page + '">Previous</a>');
+  } else {
+    pageLinks.push('<span class="pagination-link disabled">Previous</span>');
+  }
+
+  data.pagination.page_range.forEach(function(pageNum) {
+    if (pageNum === data.pagination.page) {
+      pageLinks.push('<span class="pagination-link current">' + pageNum + '</span>');
+    } else {
+      pageLinks.push('<a class="pagination-link" href="?page=' + pageNum + '" data-page="' + pageNum + '">' + pageNum + '</a>');
+    }
+  });
+
+  if (data.pagination.has_next) {
+    pageLinks.push('<a class="pagination-link" href="?page=' + data.pagination.next_page + '" data-page="' + data.pagination.next_page + '">Next</a>');
+  } else {
+    pageLinks.push('<span class="pagination-link disabled">Next</span>');
+  }
+
+  controls.innerHTML = pageLinks.join('');
+  document.querySelector('.pagination-info').textContent = 'Page ' + data.pagination.page + ' of ' + data.pagination.num_pages;
+  history.replaceState(null, '', '?page=' + data.pagination.page);
+}
+
+function loadAuditLogPage(page) {
+  const url = new URL(window.location.href);
+  url.searchParams.set('page', page);
+  url.searchParams.set('ajax', '1');
+
+  fetch(url.toString(), {
+    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    credentials: 'same-origin',
+  })
+  .then(function(response) {
+    if (!response.ok) throw new Error('Failed to load audit log page');
+    return response.json();
+  })
+  .then(refreshAuditLogTable)
+  .catch(function() {
+    showAlert('error', 'Unable to load audit history. Please try again.');
+  });
+}
+
+document.addEventListener('click', function(event) {
+  const link = event.target.closest('.pagination-controls a.pagination-link');
+  if (!link) return;
+  event.preventDefault();
+  const page = link.dataset.page || new URL(link.href, window.location.origin).searchParams.get('page');
+  if (page) loadAuditLogPage(page);
+});
+</script>
+{% endblock %}

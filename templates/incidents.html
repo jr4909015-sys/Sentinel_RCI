@@ -1,0 +1,339 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Incidents — Sentinel{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'incidents.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dash-layout">
+  {% include 'components/sidebar.html' with sidebar_incidents_badge=sidebar_incidents_badge %}
+  <div class="dash-main">
+
+    <!-- Top bar -->
+    {% include 'components/topbar.html' %}
+
+    <!-- Page content -->
+    <div class="dash-content">
+
+      <!-- ── PAGE HEADER ── -->
+      <div class="inc-page-header reveal">
+        <div class="inc-page-header-left">
+          <div class="section-label">Monitor</div>
+          <h1 class="inc-page-title">Incident Log</h1>
+          <p class="inc-page-sub">Real-time registry of all active and resolved incidents across all locations.</p>
+        </div>
+        <div class="inc-page-header-right">
+          <button class="btn-ghost inc-export-btn" id="exportBtn">
+            <span class="material-symbols-outlined mi-16" aria-hidden="true">download</span>
+            Export
+          </button>
+          <button class="btn-primary inc-new-btn" id="newIncidentBtn">
+            <span class="material-symbols-outlined mi-16" aria-hidden="true">add</span>
+            New Incident
+          </button>
+        </div>
+      </div>
+
+      <!-- ── STAT STRIP ── -->
+      <div class="inc-stat-strip reveal">
+        <div class="inc-stat-cell">
+          <span class="inc-stat-n" style="color:var(--danger)" id="statActive">{{ active_count }}</span>
+          <span class="inc-stat-l">Active</span>
+        </div>
+        <div class="inc-stat-divider"></div>
+        <div class="inc-stat-cell">
+          <span class="inc-stat-n" style="color:var(--success)" id="statResolvedToday">{{ resolved_today_count }}</span>
+          <span class="inc-stat-l">Resolved Today</span>
+        </div>
+        <div class="inc-stat-divider"></div>
+        <div class="inc-stat-cell">
+          <span class="inc-stat-n" style="color:var(--muted)" id="statThisMonth">{{ total_this_month }}</span>
+          <span class="inc-stat-l">This Month</span>
+        </div>
+        <div class="inc-stat-spacer"></div>
+      </div>
+
+      <!-- ── TOOLBAR ── -->
+      <div class="inc-toolbar reveal">
+        <!-- Search -->
+        <div class="inc-search-wrap">
+          <span class="material-symbols-outlined mi-16" aria-hidden="true">search</span>
+          <input type="text" class="inc-search" id="incSearch" placeholder="Search by location, description…" aria-label="Search incidents">
+          <kbd class="inc-search-kbd">/</kbd>
+        </div>
+
+        <!-- Type filters -->
+        <div class="inc-type-filters" id="typeFilters">
+          <button class="inc-type-btn active" data-type="all">All <span class="inc-type-count">{{ all_count }}</span></button>
+          <button class="inc-type-btn" data-type="fire">
+            <span class="inc-type-dot" style="background:var(--danger)"></span>Fire <span class="inc-type-count">{{ fire_count }}</span>
+          </button>
+          <button class="inc-type-btn" data-type="med">
+            <span class="inc-type-dot" style="background:var(--gold)"></span>Medical <span class="inc-type-count">{{ med_count }}</span>
+          </button>
+          <button class="inc-type-btn" data-type="sec">
+            <span class="inc-type-dot" style="background:#B394FF"></span>Security <span class="inc-type-count">{{ sec_count }}</span>
+          </button>
+          <button class="inc-type-btn" data-type="accident">
+            <span class="inc-type-dot" style="background:#FF9500"></span>Accident <span class="inc-type-count">{{ acc_count }}</span>
+          </button>
+        </div>
+
+        <!-- Right controls -->
+        <div class="inc-toolbar-right">
+          <!-- Status filter -->
+          <select class="inc-select" id="statusFilter">
+            <option value="all">All Statuses</option>
+            <option value="active">Active</option>  
+            <option value="resolved">Resolved</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- ── TABLE VIEW ── -->
+      <div class="inc-table-wrap reveal" id="tableView">
+        <table class="inc-table" id="incidentTable">
+          <colgroup>
+            <col style="width:8%;">
+            <col style="width:10%;">
+            <col style="width:28%;">
+            <col style="width:14%;">
+            <col style="width:12%;">
+          </colgroup>
+          <thead>
+            <tr>
+              <th class="sortable" data-col="id">ID <span class="material-symbols-outlined mi-14 sort-icon" aria-hidden="true">unfold_more</span></th>
+              <th class="sortable" data-col="type">Type <span class="material-symbols-outlined mi-14 sort-icon" aria-hidden="true">unfold_more</span></th>
+              <th>Description</th>
+              <th class="sortable" data-col="location">Location <span class="material-symbols-outlined mi-14 sort-icon" aria-hidden="true">unfold_more</span></th>
+              <th class="sortable" data-col="status">Status <span class="material-symbols-outlined mi-14 sort-icon" aria-hidden="true">unfold_more</span></th>
+              <th class="sortable" data-col="time">Reported <span class="material-symbols-outlined mi-14 sort-icon" aria-hidden="true">unfold_more</span></th>
+            </tr>
+          </thead>
+          <tbody id="incidentTableBody">
+            <!-- JS renders rows from incidentData -->
+          </tbody>
+        </table>
+
+        <!-- Pagination -->
+        <div class="inc-pagination">
+          <span class="inc-pagination-info" id="paginationInfo">Showing 1–15 of 56</span>
+          <div class="inc-pagination-controls">
+            <button class="inc-page-btn" id="prevPage" disabled aria-label="Previous page">
+              <span class="material-symbols-outlined mi-16" aria-hidden="true">chevron_left</span>
+            </button>
+            <div class="inc-page-numbers" id="pageNumbers"></div>
+            <button class="inc-page-btn" id="nextPage" aria-label="Next page">
+              <span class="material-symbols-outlined mi-16" aria-hidden="true">chevron_right</span>
+            </button>
+          </div>
+          <select class="inc-select inc-per-page" id="perPage">
+            <option value="15">15 / page</option>
+            <option value="25">25 / page</option>
+            <option value="50">50 / page</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- ── CARD VIEW (hidden by default) ── -->
+      <div class="inc-cards-wrap" id="cardsView" style="display:none;">
+        <div class="inc-cards-grid" id="incidentCardsGrid">
+          <!-- JS renders cards -->
+        </div>
+      </div>
+
+    </div><!-- /dash-content -->
+  </div><!-- /dash-main -->
+</div><!-- /dash-layout -->
+
+<div class="inc-drawer-overlay" id="drawerOverlay"></div>
+<aside class="inc-drawer" id="incDrawer">
+  <div class="inc-drawer-header">
+    <div class="inc-drawer-title-wrap">
+      <span class="inc-drawer-id" id="drawerID">#INC-0041</span>
+      <span class="mock-badge fire" id="drawerBadge">FIRE</span>
+    </div>
+    <button class="inc-drawer-close" id="drawerClose">
+      <span class="material-symbols-outlined mi-16" aria-hidden="true">close</span>
+    </button>
+  </div>
+
+  <div class="inc-drawer-body">
+    <!-- Status + Location row -->
+    <div class="inc-drawer-row">
+      <div class="inc-drawer-field">
+        <span class="inc-drawer-label">Status</span>
+        <span class="inc-status onscene" id="drawerStatus">On Scene</span>
+      </div>
+      <div class="inc-drawer-field">
+        <span class="inc-drawer-label">Location</span>
+        <span class="inc-drawer-value" id="drawerLocation">Area 7-G</span>
+      </div>
+      <div class="inc-drawer-field">
+        <span class="inc-drawer-label">Specific Location</span>
+        <span class="inc-drawer-value" id="drawerSpecificLocation">Building C</span>
+      </div>
+    </div>
+
+    <!-- Description -->
+    <div class="inc-drawer-section">
+      <span class="inc-drawer-label">Description</span>
+      <p class="inc-drawer-desc" id="drawerDesc">Structure fire at Building C, Area 7G. Multiple floors involved. Evacuation in progress.</p>
+    </div>
+  </div>
+    
+    <div class="inc-drawer-footer">
+      <button class="btn-primary" style="flex:1; justify-content:center;" id="drawerResolve">Mark Resolved</button>
+      <button class="btn-ghost" style="justify-content:center;" id="drawerActivate">Mark Active</button>
+      <button class="btn-ghost" style="justify-content:center;color: var(--danger);" id="drawerDelete">Delete</button>
+    </div>
+
+</aside>
+
+<div class="inc-modal-overlay" id="modalOverlay"></div>
+<div class="inc-modal" id="newIncidentModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="inc-modal-header">
+    <div>
+      <span class="login-eyebrow" style="margin-bottom:6px">
+        <span class="pulse"></span> New Incident
+      </span>
+      <h2 class="inc-modal-title" id="modalTitle">Log Incident</h2>
+    </div>
+    <button type="button" class="inc-drawer-close" id="modalClose">
+      <span class="material-symbols-outlined mi-16" aria-hidden="true">close</span>
+    </button>
+  </div>
+
+  <form method="post" id="newIncidentForm" action="{% url 'log_incident' %}">
+    {% csrf_token %}
+
+    <div class="inc-modal-body">
+      <div class="inc-modal-grid">
+
+        <!-- Type -->
+        <div class="form-group">
+          <label class="form-label">Incident Type</label>
+          <div class="inc-type-radio-group">
+            <label class="inc-type-radio active" data-value="fire">
+              <input type="radio" name="inc_type" value="fire" checked>
+              <span class="material-symbols-outlined mi-16" aria-hidden="true">local_fire_department</span>
+              Fire
+            </label>
+            <label class="inc-type-radio" data-value="med">
+              <input type="radio" name="inc_type" value="med">
+              <span class="material-symbols-outlined mi-16" aria-hidden="true">medical_services</span>
+              Medical
+            </label>
+            <label class="inc-type-radio" data-value="sec">
+              <input type="radio" name="inc_type" value="sec">
+              <span class="material-symbols-outlined mi-16" aria-hidden="true">shield</span>
+              Security
+            </label>
+            <label class="inc-type-radio" data-value="accident">
+              <input type="radio" name="inc_type" value="accident">
+              <span class="material-symbols-outlined mi-16" aria-hidden="true">warning</span>
+              Accident
+            </label>
+          </div>
+        </div>
+
+        <!-- Description (full width) -->
+        <div class="form-group inc-modal-full">
+          <label class="form-label">Description</label>
+          <div class="input-wrap">
+            <input type="text" class="form-input" name="description" placeholder="Brief description of the incident…" id="modalDesc">
+            <span class="input-line" id="line-modalDesc"></span>
+          </div>
+        </div>
+
+        <!-- Location -->
+        <div class="form-group">
+          <label class="form-label">Location</label>
+          <div class="input-wrap">
+            <select class="form-input inc-select-full" name="location" id="modalLocation">
+              <option value="main_building">Main Building</option>
+              <option value="main_canteen">Main Canteen</option>
+              <option value="garden">Garden</option>
+              <option value="parking_lot">Parking Lot</option>
+              <option value="gate">Gate</option>
+              <option value="flagpole">Flagpole</option>
+              <option value="shs_building">SHS Building</option>
+              <option value="event_center">Event Center</option>
+              <option value="basketball_court">Basketball Court</option>
+              <option value="ched_building">CHED Building</option>
+              <option value="new_building">New Building</option>
+              <option value="new_canteen">New Canteen</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Specific Location -->
+        <div class="form-group">
+          <label class="form-label">Specific Location</label>
+          <div class="input-wrap">
+            <input type="text" class="form-input" name="specific_location" placeholder="Building, street, landmark…" id="modalSpecificLocation">
+            <span class="input-line" id="line-modalSpecificLocation"></span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="inc-modal-footer">
+      <button type="button" class="btn-ghost" id="modalCancel">Cancel</button>
+      <button type="button" class="btn-primary" id="modalSubmit" style="justify-content:center;">
+        <span class="material-symbols-outlined mi-16" aria-hidden="true">send</span>
+        Dispatch &amp; Log
+      </button>
+    </div>
+
+  </form>
+</div>
+
+<!-- Confirmation Modal for Delete -->
+<div class="inc-modal-overlay" id="confirmDeleteOverlay"></div>
+<div class="inc-modal" id="confirmDeleteModal" role="dialog" aria-modal="true">
+  <div class="inc-modal-header">
+    <h2 class="inc-modal-title">Delete Incident</h2>
+    <button type="button" class="inc-drawer-close" id="confirmDeleteClose">
+      <span class="material-symbols-outlined mi-16" aria-hidden="true">close</span>
+    </button>
+  </div>
+  <div class="inc-modal-body" style="padding: 20px 24px; flex: none;">
+    <p style="color: var(--muted); line-height: 1.6;">Are you sure you want to delete this incident? This action cannot be undone.</p>
+  </div>
+  <div class="inc-modal-footer">
+    <button type="button" class="btn-ghost" id="confirmDeleteCancel">Cancel</button>
+    <button type="button" class="btn-primary" id="confirmDeleteConfirm" style="background: var(--danger);">
+      Delete Incident
+    </button>
+  </div>
+</div>
+
+<!-- Confirmation Modal for Mark Active -->
+<div class="inc-modal-overlay" id="confirmActiveOverlay"></div>
+<div class="inc-modal" id="confirmActiveModal" role="dialog" aria-modal="true">
+  <div class="inc-modal-header">
+    <h2 class="inc-modal-title">Mark as Active</h2>
+    <button type="button" class="inc-drawer-close" id="confirmActiveClose">
+      <span class="material-symbols-outlined mi-16" aria-hidden="true">close</span>
+    </button>
+  </div>
+  <div class="inc-modal-body" style="padding: 20px 24px; flex: none;">
+    <p style="color: var(--muted); line-height: 1.6;">Mark this incident as active? It will be moved back to the active incidents list.</p>
+  </div>
+  <div class="inc-modal-footer">
+    <button type="button" class="btn-ghost" id="confirmActiveCancel">Cancel</button>
+    <button type="button" class="btn-primary" id="confirmActiveConfirm">
+      Mark Active
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'incidents.js' %}"></script>
+{% endblock %}

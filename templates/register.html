@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sentinel — Create Account</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23F5C400' stroke-width='2'%3E%3Cpath d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/%3E%3C/svg%3E" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=Syne:wght@400;700;800&family=Syne+Mono&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+
+  <style>
+    .material-symbols-outlined, .mi { font-family:'Material Symbols Outlined',sans-serif; font-weight:normal; font-style:normal; line-height:1; display:inline-block; white-space:nowrap; direction:ltr; -webkit-font-smoothing:antialiased; font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align:middle; user-select:none; }
+    .mi-14{font-size:14px;} .mi-16{font-size:16px;} .mi-18{font-size:18px;} .mi-20{font-size:20px;} .mi-24{font-size:24px;}
+    /* ── CSS VARIABLES ── */
+    :root {
+      --bg:        #080414;
+      --surface:   #100824;
+      --surface2:  #180D33;
+      --border:    #2B1A55;
+      --gold:      #F5C400;
+      --gold-dim:  #B89200;
+      --white:     #F0EAF8;
+      --muted:     #7A6A9A;
+      --purple:    #3D1F7A;
+      --purple-hi: #5C33AA;
+      --danger:    #FF4444;
+      --success:   #4CAF50;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { height: 100%; scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--white);
+      font-family: 'IBM Plex Mono', monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      cursor: crosshair;
+    }
+
+    /* Noise overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      background-size: 200px;
+      opacity: 0.4;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* Grid background */
+    .grid-bg {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 60px 60px;
+      opacity: 0.3;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes ticker  { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+    @keyframes blink   { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    @keyframes sweep   { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+    @keyframes ripple  { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(3); opacity: 0; } }
+    @keyframes fadeUp  { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+    @keyframes shake   {
+      0%,100% { transform: translateX(0); }
+      20%     { transform: translateX(-6px); }
+      40%     { transform: translateX(6px); }
+      60%     { transform: translateX(-4px); }
+      80%     { transform: translateX(4px); }
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 48px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .nav-logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.25rem;
+      letter-spacing: 0.25em;
+      color: var(--gold);
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--white); }
+    .nav-cta {
+      background: var(--gold);
+      color: var(--bg);
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 700;
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 10px 24px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .nav-cta:hover { background: #FFD633; transform: translateY(-1px); }
+
+    /* ── STATUS BAR ── */
+    .status-bar {
+      position: relative;
+      z-index: 10;
+      background: var(--danger);
+      padding: 6px 0;
+      overflow: hidden;
+    }
+    .status-bar-inner {
+      display: flex;
+      gap: 80px;
+      animation: ticker 20s linear infinite;
+      white-space: nowrap;
+    }
+    .status-bar span {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #fff;
+    }
+    .status-bar .dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background: #fff;
+      border-radius: 50%;
+      margin-right: 10px;
+      vertical-align: middle;
+      animation: blink 1s step-end infinite;
+    }
+
+    /* ── PAGE BODY ── */
+    .page-body {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: calc(100vh - 56px - 34px);
+    }
+
+    /* ── LEFT PANEL ── */
+    .left-panel {
+      position: relative;
+      padding: 80px 64px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      border-right: 1px solid var(--border);
+      overflow: hidden;
+      animation: fadeUp 0.7s ease both;
+    }
+    .panel-radar {
+      position: absolute;
+      bottom: -80px;
+      left: -80px;
+      width: 400px;
+      height: 400px;
+      opacity: 0.12;
+      pointer-events: none;
+    }
+    .radar-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid var(--gold);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .radar-ring:nth-child(1) { width: 100%; height: 100%; }
+    .radar-ring:nth-child(2) { width: 70%;  height: 70%; }
+    .radar-ring:nth-child(3) { width: 40%;  height: 40%; }
+    .radar-cross {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100%; height: 100%;
+    }
+    .radar-cross::before, .radar-cross::after {
+      content: ''; position: absolute; background: var(--gold);
+    }
+    .radar-cross::before { width: 100%; height: 1px; top: 50%; left: 0; }
+    .radar-cross::after  { width: 1px; height: 100%; left: 50%; top: 0; }
+    .radar-sweep {
+      position: absolute; top: 50%; left: 50%;
+      width: 50%; height: 1px;
+      background: var(--gold);
+      transform-origin: left center;
+      animation: sweep 4s linear infinite;
+    }
+
+    .left-eyebrow {
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .left-eyebrow::before {
+      content: '';
+      width: 32px; height: 1px;
+      background: var(--gold);
+      display: block;
+    }
+    .left-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: clamp(2.8rem, 5vw, 4.5rem);
+      line-height: 0.92;
+      letter-spacing: -0.02em;
+      margin-bottom: 24px;
+    }
+    .left-title .accent  { color: var(--gold); }
+    .left-title .outline { -webkit-text-stroke: 2px var(--white); color: transparent; }
+    .left-desc {
+      font-size: 0.78rem;
+      line-height: 1.9;
+      color: var(--muted);
+      max-width: 380px;
+      margin-bottom: 52px;
+    }
+
+    /* Step indicator */
+    .reg-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      border: 1px solid var(--border);
+      min-width: 280px;
+      width: fit-content;
+    }
+    .reg-step {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.2s;
+    }
+    .reg-step:last-child { border-bottom: none; }
+    .reg-step.active { background: rgba(245,196,0,0.05); border-left: 2px solid var(--gold); }
+    .reg-step.done   { border-left: 2px solid var(--success); }
+
+    .reg-step-num {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1rem;
+      color: var(--border);
+      width: 36px; height: 36px;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+    .reg-step.active .reg-step-num { border-color: var(--gold); color: var(--bg); background: var(--gold); }
+    .reg-step.done   .reg-step-num { border-color: var(--success); color: var(--bg); background: var(--success); }
+
+    .reg-step-label {
+      display: block;
+      font-size: 0.7rem; font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .reg-step.active .reg-step-label { color: var(--gold); }
+    .reg-step.done   .reg-step-label { color: var(--success); }
+    .reg-step-sub {
+      display: block;
+      font-size: 0.6rem;
+      color: var(--border);
+      letter-spacing: 0.05em;
+      margin-top: 2px;
+    }
+
+    /* ── RIGHT PANEL ── */
+    .right-panel {
+      position: relative;
+      padding: 80px 64px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      background: var(--surface);
+      animation: fadeUp 0.7s 0.15s ease both;
+    }
+    .coord-tag {
+      position: absolute;
+      top: 28px; right: 48px;
+      font-size: 0.6rem;
+      letter-spacing: 0.15em;
+      color: var(--border);
+      font-family: 'Syne Mono', monospace;
+    }
+
+    /* ── LOGIN BOX ── */
+    .login-box { max-width: 440px; width: 100%; }
+    .login-box-header { margin-bottom: 32px; }
+    .login-eyebrow {
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .login-eyebrow .pulse {
+      width: 7px; height: 7px;
+      background: var(--gold);
+      border-radius: 50%;
+      animation: blink 1s step-end infinite;
+      display: inline-block;
+    }
+    .login-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 2rem;
+      letter-spacing: -0.01em;
+      color: var(--white);
+      margin-bottom: 8px;
+    }
+    .login-sub { font-size: 0.72rem; color: var(--muted); line-height: 1.7; }
+
+    /* Progress bar */
+    .reg-progress-track {
+      height: 2px;
+      background: var(--border);
+      margin-bottom: 32px;
+      overflow: hidden;
+    }
+    .reg-progress-fill {
+      height: 100%;
+      background: var(--gold);
+      transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    /* ── FORM ── */
+    .form-group { margin-bottom: 20px; position: relative; }
+    .form-label {
+      display: block;
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .form-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--white);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.85rem;
+      padding: 14px 16px;
+      outline: none;
+      transition: border-color 0.2s;
+      -webkit-appearance: none;
+    }
+    .form-input::placeholder { color: var(--border); }
+    .form-input:focus { border-color: var(--gold); }
+    .form-input:focus + .input-line { width: 100%; }
+    .form-input.error { border-color: var(--danger) !important; }
+    .form-input.error + .input-line { background: var(--danger); width: 100%; }
+
+    .input-wrap { position: relative; }
+    .input-line {
+      display: block;
+      height: 1px;
+      background: var(--gold);
+      width: 0;
+      transition: width 0.3s ease;
+      margin-top: -1px;
+    }
+
+    /* Inline field error */
+    .field-hint {
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      color: var(--danger);
+      margin-top: 6px;
+      display: none;
+      align-items: center;
+      gap: 6px;
+    }
+    .field-hint.show { display: flex; }
+
+    /* Eye button */
+    .eye-btn {
+      position: absolute;
+      right: 14px; top: 50%;
+      transform: translateY(-50%);
+      background: none; border: none;
+      cursor: pointer;
+      color: var(--muted);
+      padding: 4px;
+      transition: color 0.2s;
+    }
+    .eye-btn:hover { color: var(--gold); }
+
+    /* Password strength */
+    .pw-strength-track { height: 2px; background: var(--border); overflow: hidden; margin-top: 6px; }
+    .pw-strength-fill  { height: 100%; width: 0; transition: width 0.3s ease, background 0.3s ease; }
+    .pw-strength-label {
+      font-size: 0.6rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: block;
+      margin-top: 4px;
+      height: 12px;
+    }
+
+    /* Step panels */
+    .reg-step-panel { display: none; animation: fadeUp 0.3s ease both; }
+    .reg-step-panel.active { display: block; }
+
+    /* Step nav */
+    .step-nav-row {
+      display: flex;
+      gap: 8px;
+      align-items: stretch;
+      margin-top: 8px;
+    }
+
+    /* ── BUTTONS ── */
+    .btn-login {
+      width: 100%;
+      background: var(--gold);
+      color: var(--bg);
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 700;
+      font-size: 0.8rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 17px 24px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 8px;
+      transition: background 0.2s, transform 0.15s, opacity 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-login:hover:not(:disabled) { background: #FFD633; transform: translateY(-1px); }
+    .btn-login:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-login .arrow { transition: transform 0.2s; }
+    .btn-login:hover:not(:disabled) .arrow { transform: translateX(4px); }
+    .btn-login .shimmer {
+      position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transform: translateX(-100%);
+    }
+    .btn-login:hover:not(:disabled) .shimmer { animation: shimmer 0.7s ease; }
+
+    .btn-register {
+      flex: 0 0 auto;
+      background: transparent;
+      color: var(--gold);
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 700;
+      font-size: 0.8rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 17px 20px;
+      border: 1px solid var(--gold);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 8px;
+      transition: background 0.2s, color 0.2s, transform 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-register:hover { background: var(--gold); color: var(--bg); transform: translateY(-1px); }
+
+    /* Shake animation for blocked advance */
+    .shake { animation: shake 0.4s ease; }
+
+    /* ── REVIEW CARD ── */
+    .review-card {
+      border: 1px solid var(--border);
+      background: var(--bg);
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .review-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+    .review-label {
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-family: 'Syne Mono', monospace;
+    }
+    .review-tag {
+      font-size: 0.55rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--gold);
+      background: rgba(245,196,0,0.08);
+      border: 1px solid rgba(245,196,0,0.2);
+      padding: 3px 8px;
+    }
+    .review-rows { display: flex; flex-direction: column; }
+    .review-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      gap: 16px;
+    }
+    .review-row:last-child { border-bottom: none; }
+    .review-key {
+      font-size: 0.62rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+    .review-val {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--white);
+      text-align: right;
+      word-break: break-all;
+    }
+
+    /* Login note */
+    .login-note {
+      margin-top: 0;
+      margin-bottom: 20px;
+      font-size: 0.65rem;
+      color: var(--border);
+      line-height: 1.7;
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .login-note strong { color: var(--muted); font-weight: 500; }
+
+    /* Sign-in link */
+    .reg-login-link {
+      margin-top: 20px;
+      font-size: 0.68rem;
+      color: var(--muted);
+      text-align: center;
+      letter-spacing: 0.05em;
+    }
+    .reg-login-link a {
+      color: var(--gold);
+      text-decoration: none;
+      font-weight: 700;
+      transition: color 0.2s;
+    }
+    .reg-login-link a:hover { color: #FFD633; }
+
+    /* ── FOOTER ── */
+    footer {
+      position: relative;
+      z-index: 10;
+      border-top: 1px solid var(--border);
+      padding: 28px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface);
+    }
+    .footer-logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1rem;
+      letter-spacing: 0.2em;
+      color: var(--gold);
+    }
+    .footer-copy { font-size: 0.65rem; color: var(--muted); letter-spacing: 0.1em; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .page-body { grid-template-columns: 1fr; }
+      .left-panel { display: none; }
+      .right-panel { padding: 40px 24px 60px; align-items: center; }
+    }
+    @media (max-width: 768px) {
+      nav { padding: 16px 20px; }
+      footer { padding: 16px 20px; flex-direction: column; gap: 12px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+
+  <!-- NAV -->
+  <nav>
+    <a class="nav-logo" href="/">
+      <span>SENTI</span>NEL
+    </a>
+    <a class="nav-cta" href="/">
+      <span class="material-symbols-outlined mi-16" aria-hidden="true">arrow_back</span>
+      Home
+    </a>
+  </nav>
+
+  <!-- STATUS BAR -->
+  <div class="status-bar">
+    <div class="status-bar-inner">
+      <span><span class="dot"></span>Secure Registration Portal — Authorized Personnel Only</span>
+      <span><span class="dot"></span>New Accounts Require Admin Approval</span>
+      <span><span class="dot"></span>Emergency Dashboard Online</span>
+      <span><span class="dot"></span>Campus Safety Network Engaged</span>
+      <span><span class="dot"></span>Secure Registration Portal — Authorized Personnel Only</span>
+      <span><span class="dot"></span>New Accounts Require Admin Approval</span>
+      <span><span class="dot"></span>Emergency Dashboard Online</span>
+      <span><span class="dot"></span>Campus Safety Network Engaged</span>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="page-body">
+
+    <!-- LEFT PANEL -->
+    <div class="left-panel">
+      <div class="panel-radar">
+        <div class="radar-ring"></div>
+        <div class="radar-ring"></div>
+        <div class="radar-ring"></div>
+        <div class="radar-cross"></div>
+        <div class="radar-sweep"></div>
+      </div>
+
+      <div class="left-eyebrow">New Account</div>
+
+      <h1 class="left-title">
+        <span class="accent">JOIN</span><br>
+        <span class="outline">SENTINEL</span><br>
+        <span style="font-size:0.4em;color:var(--muted);letter-spacing:0.12em;font-weight:400;-webkit-text-stroke:0;">SCHOOL EMERGENCY<br>RESPONSE PLATFORM</span>
+      </h1>
+
+      <p class="left-desc">
+        Register your account to begin submitting incident reports. Your role and access level are assigned by system administrators.
+      </p>
+
+      <!-- Step indicators -->
+      <div class="reg-steps">
+        <div class="reg-step active" id="step-ind-1">
+          <div class="reg-step-num">01</div>
+          <div class="reg-step-text">
+            <span class="reg-step-label">Identity</span>
+            <span class="reg-step-sub">Name &amp; School ID</span>
+          </div>
+        </div>
+        <div class="reg-step" id="step-ind-2">
+          <div class="reg-step-num">02</div>
+          <div class="reg-step-text">
+            <span class="reg-step-label">Credentials</span>
+            <span class="reg-step-sub">Username &amp; Password</span>
+          </div>
+        </div>
+        <div class="reg-step" id="step-ind-3">
+          <div class="reg-step-num">03</div>
+          <div class="reg-step-text">
+            <span class="reg-step-label">Confirm</span>
+            <span class="reg-step-sub">Review &amp; Submit</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel">
+      <div class="coord-tag">REG // NODE-01 // STEP <span id="coord-step">01</span>/03</div>
+
+      <div class="login-box">
+
+        <!-- STEP HEADER -->
+        <div class="login-box-header">
+          <div class="login-eyebrow">
+            <span class="pulse"></span>
+            <span id="reg-eyebrow-text">Step 1 of 3 — Identity</span>
+          </div>
+          <h2 class="login-title" id="reg-title">Create Account</h2>
+          <p class="login-sub" id="reg-sub">Enter your full name and school ID number to get started.</p>
+        </div>
+
+        <!-- PROGRESS BAR -->
+        <div class="reg-progress-track">
+          <div class="reg-progress-fill" id="reg-progress" style="width:33.33%"></div>
+        </div>
+
+        <!-- FORM -->
+        <form id="reg-form" method="post" autocomplete="off" onsubmit="handleRegSubmit(event)">
+          {% csrf_token %}
+
+          <!-- ══ STEP 1: IDENTITY ══ -->
+          <div class="reg-step-panel active" id="panel-1">
+
+            <div class="form-group">
+              <label class="form-label" for="id_first_name">First Name</label>
+              <div class="input-wrap">
+                <input class="form-input" type="text" id="id_first_name" name="first_name" placeholder="e.g. Maria" />
+                <span class="input-line"></span>
+              </div>
+              <div class="field-hint" id="hint-first_name">
+                <span class="material-symbols-outlined mi-14" aria-hidden="true">info</span>
+                First name is required.
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="id_last_name">Last Name</label>
+              <div class="input-wrap">
+                <input class="form-input" type="text" id="id_last_name" name="last_name" placeholder="e.g. Santos" />
+                <span class="input-line"></span>
+              </div>
+              <div class="field-hint" id="hint-last_name">
+                <span class="material-symbols-outlined mi-14" aria-hidden="true">info</span>
+                Last name is required.
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="id_student_id">Student ID</label>
+              <div class="input-wrap">
+                <input class="form-input" type="text" id="id_student_id" name="student_id" placeholder="e.g. 2024-00001" />
+                <span class="input-line"></span>
+              </div>
+              <div class="field-hint" id="hint-student_id">
+                <span class="material-symbols-outlined mi-14" aria-hidden="true">info</span>
+                Student ID is required.
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="id_email">Email Address</label>
+              <div class="input-wrap">
+                <input class="form-input" type="email" id="id_email" name="email" placeholder="e.g. maria@school.edu" />
+                <span class="input-line"></span>
+              </div>
+              <div class="field-hint" id="hint-email">
+                <span class="material-symbols-outlined mi-14" aria-hidden="true">info</span>
+                Email is required.
+              </div>
+            </div>
+
+            <button type="button" class="btn-login" id="btn-next-1" onclick="goToStep(2)">
+              <span class="shimmer"></span>
+              <span>Continue</span>
+              <span class="material-symbols-outlined mi-16" aria-hidden="true">arrow_forward</span>
+            </button>
+          </div>
+
+          <!-- ══ STEP 2: CREDENTIALS ══ -->
+          <div class="reg-step-panel" id="panel-2">
+
+            <div class="form-group">
+              <label class="form-label" for="id_username">Username</label>
+              <div class="input-wrap">
+                <input class="form-input" type="text" id="id_username" name="username" placeholder="e.g. msantos" />
+                <span class="input-line"></span>
+              </div>
+              <div class="field-hint" id="hint-username">
+                <span class="material-symbols-outlined mi-14" aria-hidden="true">info</span>
+                Username is required.
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="id_password1">Password</label>
+              <div class="input-wrap">
+                <input class="form-input" type="password" id="id_password1" name="password1" placeholder="Min. 8 characters" style="padding-right:44px" />
+                <span class="input-line"></span>
+                <button type="button" class="eye-btn" onclick="togglePw('id_password1', this)" aria-label="Toggle password">
+                  <span class="material-symbols-outlined mi-16" aria-hidden="true">visibility</span>
+                </button>
+              </div>
+              <div class="pw-strength-track">
+                <div class="pw-strength-fill" id="pw-strength-bar"></div>
+              </div>
+              <span class="pw-strength-label" id="pw-strength-label"></span>
+              <div class="field-hint" id="hint-password1">
+                <span class="material-symbols-outlined mi-14" aria-hidden="true">info</span>
+                Password is required.
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="id_password2">Confirm Password</label>
+              <div class="input-wrap">
+                <input class="form-input" type="password" id="id_password2" name="password2" placeholder="Repeat your password" style="padding-right:44px" />
+                <span class="input-line"></span>
+                <button type="button" class="eye-btn" onclick="togglePw('id_password2', this)" aria-label="Toggle password">
+                  <span class="material-symbols-outlined mi-16" aria-hidden="true">visibility</span>
+                </button>
+              </div>
+              <div class="field-hint" id="hint-password2">
+                <span class="material-symbols-outlined mi-14" aria-hidden="true">info</span>
+                <span id="hint-password2-text">Please confirm your password.</span>
+              </div>
+            </div>
+
+            <div class="step-nav-row">
+              <button type="button" class="btn-register" onclick="goToStep(1)">
+                <span class="material-symbols-outlined mi-16" aria-hidden="true">arrow_back</span>
+                Back
+              </button>
+              <button type="button" class="btn-login" id="btn-next-2" style="flex:1;margin-top:8px;" onclick="goToStep(3)">
+                <span class="shimmer"></span>
+                <span>Continue</span>
+                <span class="material-symbols-outlined mi-16" aria-hidden="true">arrow_forward</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- ══ STEP 3: CONFIRM ══ -->
+          <div class="reg-step-panel" id="panel-3">
+
+            <div class="review-card">
+              <div class="review-header">
+                <span class="review-label">// Account Summary</span>
+                <span class="review-tag">Pending Review</span>
+              </div>
+              <div class="review-rows">
+                <div class="review-row">
+                  <span class="review-key">Full Name</span>
+                  <span class="review-val" id="rev-name">—</span>
+                </div>
+                <div class="review-row">
+                  <span class="review-key">Email</span>
+                  <span class="review-val" id="rev-email">—</span>
+                </div>
+                <div class="review-row">
+                  <span class="review-key">School ID</span>
+                  <span class="review-val" id="rev-school-id">—</span>
+                </div>
+                <div class="review-row">
+                  <span class="review-key">Username</span>
+                  <span class="review-val" id="rev-username">—</span>
+                </div>
+                <div class="review-row">
+                  <span class="review-key">Role</span>
+                  <span class="review-val" style="color:var(--gold);">Reporter (default)</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="login-note">
+              <strong>// Note:</strong> Your role is assigned by an administrator after registration. You will be granted Reporter access by default.
+            </div>
+
+            <div class="step-nav-row">
+              <button type="button" class="btn-register" onclick="goToStep(2)">
+                <span class="material-symbols-outlined mi-16" aria-hidden="true">arrow_back</span>
+                Back
+              </button>
+              <button type="submit" class="btn-login" id="reg-submit-btn" style="flex:1;margin-top:8px;">
+                <span class="shimmer"></span>
+                <span id="reg-btn-text">Create Account</span>
+                <span class="material-symbols-outlined mi-16" aria-hidden="true">arrow_forward</span>
+              </button>
+            </div>
+          </div>
+
+        </form>
+
+        <div class="reg-login-link">
+          Already have an account?
+          <a href="{% url 'login' %}">Sign in <span class="material-symbols-outlined mi-16" aria-hidden="true">arrow_forward</span></a>
+        </div>
+
+      </div><!-- /.login-box -->
+    </div><!-- /.right-panel -->
+  </div><!-- /.page-body -->
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-logo">SENTINEL</div>
+    <span class="footer-copy">© 2026 SENTINEL. School Emergency Response Platform.</span>
+  </footer>
+
+  <script>
+  (function () {
+    /* ─────────────────────────────────────────
+       STATE
+    ───────────────────────────────────────── */
+    var currentStep = 1;
+
+    var STEP_META = [
+      null,
+      { eyebrow: 'Step 1 of 3 — Identity',    title: 'Create Account',  sub: 'Enter your full name, email, and school ID to get started.' },
+      { eyebrow: 'Step 2 of 3 — Credentials', title: 'Set Credentials', sub: 'Choose a unique username and a secure password.' },
+      { eyebrow: 'Step 3 of 3 — Confirm',     title: 'Review & Submit', sub: 'Confirm your details before creating your account.' },
+    ];
+
+    /* Fields required at each step */
+    var STEP_FIELDS = {
+      1: ['id_first_name', 'id_last_name', 'id_student_id', 'id_email'],
+      2: ['id_username', 'id_password1', 'id_password2'],
+    };
+
+    /* ─────────────────────────────────────────
+       VALIDATION
+    ───────────────────────────────────────── */
+    function clearError(id) {
+      var el   = document.getElementById(id);
+      var hint = document.getElementById('hint-' + id.replace('id_', ''));
+      if (el)   el.classList.remove('error');
+      if (hint) hint.classList.remove('show');
+    }
+
+    function setError(id, msg) {
+      var el   = document.getElementById(id);
+      var hint = document.getElementById('hint-' + id.replace('id_', ''));
+      if (el) {
+        el.classList.add('error');
+        el.focus();
+      }
+      if (hint) {
+        if (msg) {
+          var txt = hint.querySelector('span');
+          if (txt) txt.textContent = msg;
+          else hint.lastChild.textContent = msg;
+        }
+        hint.classList.add('show');
+      }
+    }
+
+    function shakeButton(btnId) {
+      var btn = document.getElementById(btnId);
+      if (!btn) return;
+      btn.classList.remove('shake');
+      /* force reflow */
+      void btn.offsetWidth;
+      btn.classList.add('shake');
+      btn.addEventListener('animationend', function () {
+        btn.classList.remove('shake');
+      }, { once: true });
+    }
+
+    function validateStep(step) {
+      if (step === 1) {
+        var ids = STEP_FIELDS[1];
+        var firstEmpty = null;
+        /* Clear all first */
+        ids.forEach(function (id) { clearError(id); });
+
+        /* Validate in reverse so the first error gets focus */
+        for (var i = ids.length - 1; i >= 0; i--) {
+          var el = document.getElementById(ids[i]);
+          if (!el || !el.value.trim()) {
+            setError(ids[i]);
+            firstEmpty = ids[i];
+          }
+        }
+        if (firstEmpty) { shakeButton('btn-next-1'); return false; }
+        return true;
+      }
+
+      if (step === 2) {
+        var ids2 = STEP_FIELDS[2];
+        ids2.forEach(function (id) { clearError(id); });
+
+        var p1El  = document.getElementById('id_password1');
+        var p2El  = document.getElementById('id_password2');
+        var unEl  = document.getElementById('id_username');
+        var ok    = true;
+        var focus = null;
+
+        /* Check in reverse so first error gets focus */
+        if (!p2El || !p2El.value.trim()) {
+          setError('id_password2', 'Please confirm your password.');
+          focus = 'id_password2'; ok = false;
+        } else if (p1El && p2El.value !== p1El.value) {
+          setError('id_password2', 'Passwords do not match.');
+          focus = 'id_password2'; ok = false;
+        }
+        if (!p1El || !p1El.value.trim()) {
+          setError('id_password1', 'Password is required.');
+          focus = 'id_password1'; ok = false;
+        }
+        if (!unEl || !unEl.value.trim()) {
+          setError('id_username', 'Username is required.');
+          focus = 'id_username'; ok = false;
+        }
+
+        if (!ok) { shakeButton('btn-next-2'); return false; }
+        return true;
+      }
+
+      return true;
+    }
+
+    /* Clear error on input */
+    ['id_first_name','id_last_name','id_student_id','id_email',
+     'id_username','id_password1','id_password2'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('input', function () { clearError(id); });
+      /* Also clear confirm-password error when main password changes */
+      if (id === 'id_password1') {
+        el.addEventListener('input', function () { clearError('id_password2'); });
+      }
+    });
+
+    /* ─────────────────────────────────────────
+       NAVIGATE
+    ───────────────────────────────────────── */
+    window.goToStep = function (step) {
+      /* Going forward: validate the current step first */
+      if (step > currentStep && !validateStep(currentStep)) return;
+
+      /* Update left indicators */
+      for (var i = 1; i <= 3; i++) {
+        var ind = document.getElementById('step-ind-' + i);
+        if (!ind) continue;
+        ind.classList.remove('active', 'done');
+        if (i < step)        ind.classList.add('done');
+        else if (i === step) ind.classList.add('active');
+      }
+
+      /* Swap panels */
+      document.querySelectorAll('.reg-step-panel').forEach(function (p) {
+        p.classList.remove('active');
+      });
+      var panel = document.getElementById('panel-' + step);
+      if (panel) panel.classList.add('active');
+
+      /* Progress bar */
+      var bar = document.getElementById('reg-progress');
+      if (bar) bar.style.width = Math.round((step / 3) * 100) + '%';
+
+      /* Coord tag */
+      var ct = document.getElementById('coord-step');
+      if (ct) ct.textContent = step < 10 ? '0' + step : step;
+
+      /* Header copy */
+      var meta = STEP_META[step];
+      if (meta) {
+        var eyebrow = document.getElementById('reg-eyebrow-text');
+        var title   = document.getElementById('reg-title');
+        var sub     = document.getElementById('reg-sub');
+        if (eyebrow) eyebrow.textContent = meta.eyebrow;
+        if (title)   title.textContent   = meta.title;
+        if (sub)     sub.textContent     = meta.sub;
+      }
+
+      /* Populate review card on step 3 */
+      if (step === 3) populateReview();
+
+      currentStep = step;
+
+      /* Scroll right panel to top */
+      var rp = document.querySelector('.right-panel');
+      if (rp) rp.scrollTop = 0;
+    };
+
+    /* ─────────────────────────────────────────
+       REVIEW POPULATE
+    ───────────────────────────────────────── */
+    function populateReview() {
+      var fn = (document.getElementById('id_first_name') || {}).value || '—';
+      var ln = (document.getElementById('id_last_name')  || {}).value || '—';
+      var si = (document.getElementById('id_student_id')  || {}).value || '—';
+      var em = (document.getElementById('id_email')      || {}).value || '—';
+      var un = (document.getElementById('id_username')   || {}).value || '—';
+
+      var rvName = document.getElementById('rev-name');
+      var rvEmail = document.getElementById('rev-email');
+      var rvSid  = document.getElementById('rev-school-id');
+      var rvUn   = document.getElementById('rev-username');
+
+      if (rvName) rvName.textContent = (fn + ' ' + ln).trim() || '—';
+      if (rvEmail) rvEmail.textContent = em;
+      if (rvSid)  rvSid.textContent  = si;
+      if (rvUn)   rvUn.textContent   = un;
+    }
+
+    /* ─────────────────────────────────────────
+       PASSWORD STRENGTH
+    ───────────────────────────────────────── */
+    var pwInput = document.getElementById('id_password1');
+    if (pwInput) {
+      pwInput.addEventListener('input', function () {
+        var val   = pwInput.value;
+        var score = 0;
+        if (val.length >= 8)            score++;
+        if (/[A-Z]/.test(val))          score++;
+        if (/[0-9]/.test(val))          score++;
+        if (/[^A-Za-z0-9]/.test(val))   score++;
+
+        var bar    = document.getElementById('pw-strength-bar');
+        var label  = document.getElementById('pw-strength-label');
+        var pcts   = ['0%', '25%', '50%', '75%', '100%'];
+        var colors = ['#FF4444', '#FF4444', '#F5C400', '#4CAF50', '#4CAF50'];
+        var labels = ['', 'Weak', 'Fair', 'Good', 'Strong'];
+
+        if (bar)   { bar.style.width = pcts[score]; bar.style.background = colors[score]; }
+        if (label) { label.textContent = labels[score]; label.style.color = colors[score]; }
+      });
+    }
+
+    /* ─────────────────────────────────────────
+       TOGGLE PASSWORD VISIBILITY
+    ───────────────────────────────────────── */
+    window.togglePw = function (inputId, btnOrIconId) {
+      var input = document.getElementById(inputId);
+      if (!input) return;
+      /* Support parehong luma (eye1/eye2 id) at bagong (this button) na tawag */
+      var icon = null;
+      if (btnOrIconId && btnOrIconId.querySelector) {
+        icon = btnOrIconId.querySelector('.material-symbols-outlined');
+      } else if (typeof btnOrIconId === 'string') {
+        icon = document.getElementById(btnOrIconId);
+        if (!icon && btnOrIconId === 'eye1') {
+          var b1 = document.querySelector('#id_password1');
+          if (b1 && b1.closest) { var w1 = b1.closest('.input-wrap'); if (w1) icon = w1.querySelector('.material-symbols-outlined'); }
+        }
+        if (!icon && btnOrIconId === 'eye2') {
+          var b2 = document.querySelector('#id_password2');
+          if (b2 && b2.closest) { var w2 = b2.closest('.input-wrap'); if (w2) icon = w2.querySelector('.material-symbols-outlined'); }
+        }
+      }
+      var visible = input.type !== 'text';
+      input.type = visible ? 'text' : 'password';
+      var isVisible = input.type === 'text';
+      if (icon) {
+        if (icon.classList && icon.classList.contains('material-symbols-outlined')) {
+          icon.textContent = isVisible ? 'visibility_off' : 'visibility';
+        } else {
+          icon.innerHTML = isVisible
+            ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
+            : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+        }
+      }
+    };
+
+    /* ─────────────────────────────────────────
+       SUBMIT
+    ───────────────────────────────────────── */
+    window.handleRegSubmit = function (e) {
+      e.preventDefault();
+
+      /* Validate step 2 (final validation) */
+      if (!validateStep(2)) return;
+
+      var btn  = document.getElementById('reg-submit-btn');
+      var text = document.getElementById('reg-btn-text');
+      if (btn)  btn.disabled = true;
+      if (text) text.textContent = 'Creating Account...';
+
+      /* Prepare form data */
+      var form = document.getElementById('reg-form');
+      var formData = new FormData(form);
+
+      /* Submit via fetch */
+      fetch(window.location.pathname, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin',
+      })
+      .then(function(response) {
+        return response.json().then(function(data) {
+          return { status: response.status, data: data };
+        });
+      })
+      .then(function(result) {
+        if (result.status === 200 && result.data.success) {
+          /* Successful registration - redirect to login */
+          if (text) text.textContent = 'Account Created! Redirecting...';
+          setTimeout(function() {
+            window.location.href = result.data.redirect || '/login/';
+          }, 800);
+        } else if (result.status === 400 && result.data.errors) {
+          /* Server validation errors */
+          displayServerErrors(result.data.errors);
+          if (btn)  btn.disabled = false;
+          if (text) text.textContent = 'Create Account';
+        } else {
+          throw new Error('Unexpected response');
+        }
+      })
+      .catch(function(err) {
+        console.error('Registration error:', err);
+        if (btn)  btn.disabled = false;
+        if (text) text.textContent = 'Create Account';
+        showToast('An error occurred during registration. Please try again.', 'error');
+      });
+    };
+
+    function displayServerErrors(errors) {
+      /* Clear all previous errors */
+      ['id_first_name','id_last_name','id_student_id','id_email',
+       'id_username','id_password1','id_password2'].forEach(function (id) {
+        clearError(id);
+      });
+
+      /* Display server errors */
+      for (var fieldName in errors) {
+        if (errors.hasOwnProperty(fieldName)) {
+          var errorMsg = errors[fieldName];
+          var fieldId = 'id_' + fieldName;
+          setError(fieldId, errorMsg);
+        }
+      }
+
+      /* Focus on first error field */
+      var firstErrorField = document.querySelector('.form-input.error');
+      if (firstErrorField) {
+        firstErrorField.focus();
+        var parentPanel = firstErrorField.closest('.reg-step-panel');
+        if (parentPanel) {
+          /* Find which step this panel is */
+          var panelId = parentPanel.id; /* e.g., "panel-1" */
+          var stepNum = parseInt(panelId.replace('panel-', ''));
+          goToStep(stepNum);
+        }
+        firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    /* ─────────────────────────────────────────
+       INPUT FOCUS LINE
+    ───────────────────────────────────────── */
+    document.querySelectorAll('.form-input').forEach(function (input) {
+      var line = input.parentNode ? input.parentNode.querySelector('.input-line') : null;
+      if (!line) return;
+      input.addEventListener('focus', function () { line.style.width = '100%'; });
+      input.addEventListener('blur',  function () {
+        if (!input.classList.contains('error')) line.style.width = '0';
+      });
+    });
+
+  })();
+  </script>
+</body>
+</html>

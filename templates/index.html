@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Sentinel — School Emergency Response Platform{% endblock %}
+{% block content %}
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#"><span>SENTI</span>NEL</a>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#how">How It Works</a></li>
+    <li><a href="#roles">Roles</a></li>
+  </ul>
+  <a class="nav-cta" href="{% url 'login' %}">Login <span class="material-symbols-outlined mi-16" aria-hidden="true">arrow_forward</span></a>
+</nav>
+
+<!-- STATUS BAR -->
+<div class="status-bar">
+  <div class="status-bar-inner">
+    <span><span class="dot"></span>System Active — All Monitoring Systems Operational</span>
+    <span><span class="dot"></span>Real-Time Incident Response Ready</span>
+    <span><span class="dot"></span>Emergency Dashboard Online</span>
+    <span><span class="dot"></span>Campus Safety Network Engaged</span>
+    <span><span class="dot"></span>System Active — All Monitoring Systems Operational</span>
+    <span><span class="dot"></span>Real-Time Incident Response Ready</span>
+    <span><span class="dot"></span>Emergency Dashboard Online</span>
+    <span><span class="dot"></span>Campus Safety Network Engaged</span>
+  </div>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="grid-bg"></div>
+
+  <div class="hero-corner-tag">Emergency Response System v1.0 // Active</div>
+
+  <div class="hero-badge">Live System Active</div>
+
+  <h1 class="hero-title">
+    <span class="accent">SENTI</span><span class="outline">NEL</span><br>
+    <span style="font-size: 0.45em; color: var(--muted); letter-spacing: 0.15em; font-weight: 400;">SCHOOL EMERGENCY RESPONSE PLATFORM</span>
+  </h1>
+
+  <p class="hero-sub">
+    Instant incident reporting. Real-time command dashboards. Campus-wide situational awareness — when every second counts.
+  </p>
+
+  <div class="hero-actions">
+    <a class="btn-primary" href="{% url 'login' %}">
+      Login
+      <span class="material-symbols-outlined mi-16" aria-hidden="true">arrow_forward</span>
+    </a>
+    <a class="btn-ghost" href="#features">See Features</a>
+  </div>
+
+  <div class="hero-stats">
+    <div class="stat-item">
+      <span class="stat-num">&lt;2s</span>
+      <span class="stat-label">Alert Delivery</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">4</span>
+      <span class="stat-label">Incident Types</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">24/7</span>
+      <span class="stat-label">System Uptime</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">2</span>
+      <span class="stat-label">Access Roles</span>
+    </div>
+  </div>
+
+  <!-- Radar Decoration -->
+  <div class="hero-deco">
+    <div class="deco-ring"></div>
+    <div class="deco-ring"></div>
+    <div class="deco-ring"></div>
+    <div class="deco-ring"></div>
+    <div class="deco-cross"></div>
+    <div class="deco-scan"></div>
+    <div class="deco-blip"></div>
+    <div class="deco-blip2"></div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee-divider">
+  <div class="marquee-track">
+    <div class="marquee-item">Medical Response <span class="material-symbols-outlined mi-14 sep" aria-hidden="true">diamond</span></div>
+    <div class="marquee-item">Fire Alerts <span class="material-symbols-outlined mi-14 sep" aria-hidden="true">diamond</span></div>
+    <div class="marquee-item">Security Incidents <span class="material-symbols-outlined mi-14 sep" aria-hidden="true">diamond</span></div>
+    <div class="marquee-item">Accident Reports <span class="material-symbols-outlined mi-14 sep" aria-hidden="true">diamond</span></div>
+    <div class="marquee-item">Real-Time Notifications <span class="material-symbols-outlined mi-14 sep" aria-hidden="true">diamond</span></div>
+    <div class="marquee-item">Interactive Campus Map <span class="material-symbols-outlined mi-14 sep" aria-hidden="true">diamond</span></div>
+    <div class="marquee-item">Incident History <span class="material-symbols-outlined mi-14 sep" aria-hidden="true">diamond</span></div>
+    <div class="marquee-item">Admin Analytics <span class="material-symbols-outlined mi-14 sep" aria-hidden="true">diamond</span></div>
+    <div class="marquee-item">Medical Response <span class="material-symbols-outlined mi-14 sep" aria-hidden="true">diamond</span></div>
+    <div class="marquee-item">Fire Alerts <span class="material-symbols-outlined mi-14 sep" aria-hidden="true">diamond</span></div>
+    <div class="marquee-item">Security Incidents <span class="material-symbols-outlined mi-14 sep" aria-hidden="true">diamond</span></div>
+    <div class="marquee-item">Accident Reports <span class="material-symbols-outlined mi-14 sep" aria-hidden="true">diamond</span></div>
+    <div class="marquee-item">Real-Time Notifications <span class="material-symbols-outlined mi-14 sep" aria-hidden="true">diamond</span></div>
+    <div class="marquee-item">Interactive Campus Map <span class="material-symbols-outlined mi-14 sep" aria-hidden="true">diamond</span></div>
+    <div class="marquee-item">Incident History <span class="material-symbols-outlined mi-14 sep" aria-hidden="true">diamond</span></div>
+    <div class="marquee-item">Admin Analytics <span class="material-symbols-outlined mi-14 sep" aria-hidden="true">diamond</span></div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+    <section class="features" id="features">
+    <div class="section-label">System Capabilities</div>
+    <h2 class="section-title reveal">Every Tool Your<br>Campus Needs.</h2>
+
+    <div class="features-grid">
+
+        <div class="feature-card reveal">
+    <span class="feature-num">01 // REPORTING</span>
+    <div class="feature-icon"><span class="material-symbols-outlined mi-24" aria-hidden="true">assignment</span></div>
+    <h3 class="feature-title">Incident Reporting</h3>
+    <p class="feature-desc">
+        Students and staff submit emergencies via web interface with School ID, incident category, optional description, and pinned campus location — all in seconds.
+    </p>
+    <span class="feature-tag">Reporter Interface</span>
+    </div>
+
+    <div class="feature-card reveal">
+    <span class="feature-num">02 // ALERTS</span>
+    <div class="feature-icon"><span class="material-symbols-outlined mi-24" aria-hidden="true">notifications</span></div>
+    <h3 class="feature-title">Real-Time Notifications</h3>
+    <p class="feature-desc">
+        Submitted reports transmit instantly to the dashboard. Audible alert sounds trigger the moment a new incident is logged — no refresh needed.
+    </p>
+    <span class="feature-tag">Live Transmission</span>
+    </div>
+
+    <div class="feature-card reveal">
+    <span class="feature-num">03 // MAP</span>
+    <div class="feature-icon"><span class="material-symbols-outlined mi-24" aria-hidden="true">location_on</span></div>
+    <h3 class="feature-title">Interactive Campus Map</h3>
+    <p class="feature-desc">
+        Drop a pin on a static campus map to pinpoint the exact incident location. The command dashboard renders all active incidents as pins and heatmap overlays.
+    </p>
+    <span class="feature-tag">Geo-Location</span>
+    </div>
+
+    <div class="feature-card reveal">
+    <span class="feature-num">04 // COMMAND</span>
+    <div class="feature-icon"><span class="material-symbols-outlined mi-24" aria-hidden="true">desktop_windows</span></div>
+    <h3 class="feature-title">Emergency Dashboard</h3>
+    <p class="feature-desc">
+        A live command-center view for authorized personnel. Shows School ID, category, description, timestamp, and status — all updated in real time as reports flow in.
+    </p>
+    <span class="feature-tag">Admin Command Center</span>
+    </div>
+
+    <div class="feature-card reveal">
+    <span class="feature-num">05 // MANAGEMENT</span>
+    <div class="feature-icon"><span class="material-symbols-outlined mi-24" aria-hidden="true">checklist</span></div>
+    <h3 class="feature-title">Incident Management</h3>
+    <p class="feature-desc">
+        Admin or assigned departments mark incidents as Resolved with one action. Resolved cases automatically move out of the active queue into history.
+    </p>
+    <span class="feature-tag">Status Control</span>
+    </div>
+
+    <div class="feature-card reveal">
+    <span class="feature-num">06 // HISTORY</span>
+    <div class="feature-icon"><span class="material-symbols-outlined mi-24" aria-hidden="true">folder_open</span></div>
+    <h3 class="feature-title">Incident History</h3>
+    <p class="feature-desc">
+        Every resolved incident is archived and displayed chronologically — newest to oldest — providing a complete, searchable record for review and audits.
+    </p>
+    <span class="feature-tag">Audit Trail</span>
+    </div>
+
+    <div class="feature-card reveal">
+    <span class="feature-num">07 // ANALYTICS</span>
+    <div class="feature-icon"><span class="material-symbols-outlined mi-24" aria-hidden="true">monitoring</span></div>
+    <h3 class="feature-title">Administrative Analytics</h3>
+    <p class="feature-desc">
+        Summary counters display total incidents, active incidents, and resolved incidents at a glance — giving leadership the data needed to respond and plan.
+    </p>
+    <span class="feature-tag">Insights Panel</span>
+    </div>
+
+    <div class="feature-card reveal">
+    <span class="feature-num">08 // ACCESS</span>
+    <div class="feature-icon"><span class="material-symbols-outlined mi-24" aria-hidden="true">shield</span></div>
+    <h3 class="feature-title">Role-Based Login</h3>
+    <p class="feature-desc">
+        Separate logins for Admin and Reporter roles. The reporter interface is fully responsive across mobile and desktop. The dashboard is optimized for desktop command-center use.
+    </p>
+    <span class="feature-tag">Secure Auth</span>
+    </div>
+
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how" id="how">
+  <div class="section-label">Workflow</div>
+  <h2 class="section-title reveal">How SENTINEL<br>Works.</h2>
+
+  <div class="steps-layout">
+    <div class="steps-list">
+
+      <div class="step reveal">
+        <div class="step-num-wrap">01</div>
+        <div class="step-content">
+          <h3 class="step-title">Reporter Logs In</h3>
+          <p class="step-desc">Any student or staff member opens SENTINEL on their phone or desktop, logs in as a Reporter, and reaches the incident form.</p>
+        </div>
+      </div>
+
+      <div class="step reveal">
+        <div class="step-num-wrap">02</div>
+        <div class="step-content">
+          <h3 class="step-title">Submit an Incident</h3>
+          <p class="step-desc">They enter their School ID, select a category (Medical, Fire, Security, Accident), drop a pin on the campus map, and optionally describe what's happening.</p>
+        </div>
+      </div>
+
+      <div class="step reveal">
+        <div class="step-num-wrap">03</div>
+        <div class="step-content">
+          <h3 class="step-title">Instant Alert Fires</h3>
+          <p class="step-desc">The report transmits in real time. The dashboard receives it immediately, triggers an audio alert, and displays the incident as active.</p>
+        </div>
+      </div>
+
+      <div class="step reveal">
+        <div class="step-num-wrap">04</div>
+        <div class="step-content">
+          <h3 class="step-title">Admin Takes Command</h3>
+          <p class="step-desc">Authorized personnel view full incident details on the dashboard, coordinate a response, and mark the incident Resolved when handled.</p>
+        </div>
+      </div>
+
+      <div class="step reveal">
+        <div class="step-num-wrap">05</div>
+        <div class="step-content">
+          <h3 class="step-title">Archived for Review</h3>
+          <p class="step-desc">Resolved incidents move automatically to Incident History, where they are stored in chronological order for future audits and analysis.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Dashboard Mockup -->
+    <div class="dashboard-mockup reveal">
+      <div class="mock-titlebar">
+        <div class="mock-dot r"></div>
+        <div class="mock-dot y"></div>
+        <div class="mock-dot g"></div>
+        <span class="mock-title">SENTINEL // Emergency Dashboard</span>
+      </div>
+      <div class="mock-body">
+        <div class="mock-stats-row">
+          <div class="mock-stat">
+            <span class="mock-stat-n">12</span>
+            <span class="mock-stat-l">Total</span>
+          </div>
+          <div class="mock-stat">
+            <span class="mock-stat-n" style="color: var(--danger)">3</span>
+            <span class="mock-stat-l">Active</span>
+          </div>
+          <div class="mock-stat">
+            <span class="mock-stat-n" style="color: #4CAF50">9</span>
+            <span class="mock-stat-l">Resolved</span>
+          </div>
+        </div>
+        <div class="mock-row">
+          <div class="mock-map">
+            <div class="mock-map-grid"></div>
+            <div class="mock-pin" style="top: 30%; left: 40%;"></div>
+            <div class="mock-pin" style="top: 55%; left: 65%; background: rgba(245,196,0,0.4); border-color: var(--gold);"></div>
+            <div class="mock-pin" style="top: 70%; left: 25%;"></div>
+          </div>
+          <div class="mock-incidents">
+            <div class="mock-incident">
+              <span class="mock-badge fire">FIRE</span>
+              <span class="mock-text">Gym Building B</span>
+              <span class="mock-time">09:14</span>
+            </div>
+            <div class="mock-incident">
+              <span class="mock-badge med">MEDICAL</span>
+              <span class="mock-text">Canteen Area</span>
+              <span class="mock-time">09:02</span>
+            </div>
+            <div class="mock-incident">
+              <span class="mock-badge sec">SECURITY</span>
+              <span class="mock-text">Main Gate</span>
+              <span class="mock-time">08:47</span>
+            </div>
+            <div class="mock-incident">
+              <span class="mock-badge fire" style="background: rgba(76,175,80,0.15); color: #4CAF50; border-color: rgba(76,175,80,0.3);">RESOLVED</span>
+              <span class="mock-text">Lab 3 — Spill</span>
+              <span class="mock-time">08:20</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ROLES -->
+<section class="roles" id="roles">
+  <div class="section-label">Access Levels</div>
+  <h2 class="section-title reveal">Two Roles.<br>One Mission.</h2>
+
+  <div class="roles-grid">
+
+    <div class="role-card reveal">
+      <span class="role-label">Role 01 // Field</span>
+      <h3 class="role-title">Reporter</h3>
+      <ul class="role-perks">
+        <li>Submit emergency incident reports anytime, anywhere</li>
+        <li>Select incident type and drop a pin on the campus map</li>
+        <li>Works seamlessly on mobile and desktop browsers</li>
+        <li>No technical training required — simple, fast form</li>
+      </ul>
+    </div>
+
+    <div class="role-card admin reveal">
+      <span class="role-label">Role 02 // Command</span>
+      <h3 class="role-title">Admin</h3>
+      <ul class="role-perks">
+        <li>Live dashboard with all incoming incidents in real time</li>
+        <li>Audio alerts triggered on every new report submission</li>
+        <li>Resolve incidents and move them to history automatically</li>
+        <li>Analytics overview: total, active, and resolved counts</li>
+        <li>Campus map with incident pins and heatmap visualization</li>
+      </ul>
+    </div>
+
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">SENTINEL</div>
+  <span class="footer-copy">© 2026 SENTINEL. School Emergency Response Platform.</span>
+</footer>
+{% endblock %}

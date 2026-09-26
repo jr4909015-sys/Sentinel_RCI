@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard — Sentinel{% endblock %}
+
+{% block content %}
+
+<!-- ── LAYOUT ── -->
+<div class="dash-layout">
+  <!-- ── SIDEBAR ── -->
+  {% include 'components/sidebar.html' with sidebar_incidents_badge=active_incidents_count %}
+
+  <!-- ── MAIN CONTENT ── -->
+  <div class="dash-main">
+
+    <!-- Top bar -->
+    {% include 'components/topbar.html' %}
+
+    <!-- Scrollable page body -->
+    <div class="dash-content">
+
+      <!-- KPI row -->
+      <div class="kpi-row reveal">
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Active Incidents</span>
+            <span class="kpi-icon fire"><span class="material-symbols-outlined mi-16" aria-hidden="true">diamond</span></span>
+          </div>
+          <div class="kpi-num mock-stat-n" data-target="{{ active_incidents_count }}">{{ active_incidents_count }}</div>
+          <div class="kpi-meta"><span class="kpi-delta up">+2</span> from last hour</div>
+          <div class="kpi-bar"><div class="kpi-bar-fill" style="width:100%; background: var(--danger);"></div></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Avg Response</span>
+            <span class="kpi-icon"><span class="material-symbols-outlined mi-16" aria-hidden="true">my_location</span></span>
+          </div>
+          <div class="kpi-num"><span class="mock-stat-n" id="avg-response-display">{{ avg_response_display }}</span></div>
+          <div class="kpi-meta"><span class="kpi-delta up good">vs average</span></div>
+          <div class="kpi-bar"><div class="kpi-bar-fill" style="width:{{ avg_response_percent|default:0|stringformat:"d" }}%; background: var(--success);"></div></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Resolved Today</span>
+            <span class="kpi-icon"><span class="material-symbols-outlined mi-16" aria-hidden="true">check</span></span>
+          </div>
+          <div class="kpi-num mock-stat-n" data-target="{{ resolved_today_count }}">{{ resolved_today_count }}</div>
+          <div class="kpi-meta"><span class="kpi-delta up good">{{ resolved_today_count|default:0 }} today</span></div>
+          <div class="kpi-bar"><div class="kpi-bar-fill" style="width:{{ resolved_today_percent|default:0|stringformat:"d" }}%; background: var(--success);"></div></div>
+        </div>
+      </div>
+
+      <!-- Middle row: map + incidents -->
+      <div class="dash-mid-row">
+
+        <!-- Live map panel -->
+        <div class="dash-panel dash-panel-map reveal">
+          <div class="panel-header">
+            <span class="panel-title">LIVE OPERATIONAL MAP</span>
+            <div class="panel-header-actions">
+              <span class="panel-live-tag"><span class="dot-live"></span> LIVE</span>
+              <button class="panel-btn" onclick="location.href='{% url 'livemap' %}'">Richwell Colleges</button>
+            </div>
+          </div>
+        <div class="map-container">
+          <div id="liveCampusMap" class="campus-image-map">
+            <img src="{% static 'images/campus-map.png' %}" alt="Campus map" class="campus-map-image">
+            <div id="dashboardMarkerLayer"></div>
+          </div>
+          {{ dashboard_active_incidents|json_script:"dashboard-active-incidents" }}
+        </div>
+          <div class="map-legend">
+            <span class="legend-item"><span class="legend-dot danger"></span>Fire</span>
+            <span class="legend-item"><span class="legend-dot gold"></span>Medical</span>
+            <span class="legend-item"><span class="legend-dot sec"></span>Security</span>
+            <span class="legend-item"><span class="legend-dot accident"></span>Accident</span>
+          </div>
+        </div>
+
+        <!-- Incidents feed -->
+        <div class="dash-panel dash-panel-incidents reveal">
+          <div class="panel-header">
+            <span class="panel-title">INCIDENT FEED <span style="font-size: 0.85em; color: var(--muted);">(Last 7)</span></span>
+            <div class="panel-header-actions">
+              <button class="panel-btn active-filter" id="incidentFilter" data-filter="all">ALL</button>
+            </div>
+          </div>
+          <div class="incident-filters">
+            <button class="inc-filter-btn active" data-type="all">All <span>{{ incident_counts.all }}</span></button>
+            <button class="inc-filter-btn" data-type="fire">Fire <span>{{ incident_counts.fire }}</span></button>
+            <button class="inc-filter-btn" data-type="med">Medical <span>{{ incident_counts.med }}</span></button>
+            <button class="inc-filter-btn" data-type="sec">Security <span>{{ incident_counts.sec }}</span></button>
+            <button class="inc-filter-btn" data-type="accident">Accident <span>{{ incident_counts.accident }}</span></button>
+          </div>
+          <div class="incident-list" id="incidentList">
+            {% for incident in incident_feed %}
+            <div class="incident-item {% if incident.category == 'fire' %}critical{% endif %}" data-type="{{ incident.category }}">
+              <div class="incident-row1">
+                <span class="mock-badge {{ incident.category }}">{{ incident.category|upper }}</span>
+                <span class="incident-id">#{{ incident.id|slice:":8"|upper }}</span>
+                <span class="incident-time">{{ incident.created_at|timesince }} ago</span>
+              </div>
+              <div class="incident-desc">{{ incident.description }}{% if incident.location_display %} — {{ incident.location_display }}{% endif %}</div>
+              <div class="incident-meta">
+                <span class="inc-status {{ incident.status }}">{{ incident.display_status|upper }}</span>
+              </div>
+            </div>
+            {% empty %}
+            <div class="incident-item no-data" data-type="all">
+              <div class="incident-row1">
+                <span class="incident-desc">No recent incidents to display</span>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom row: Activity chart -->
+      <div class="dash-bot-row">
+
+        <!-- Activity chart -->
+        <div class="dash-panel reveal">
+          <div class="panel-header">
+            <span class="panel-title" id="activityChartTitle">INCIDENT ACTIVITY — 24H</span>
+            <div class="panel-header-actions">
+              <button class="panel-btn active" data-range="24">24H</button>
+              <button class="panel-btn" data-range="7">7D</button>
+              <button class="panel-btn" data-range="30">30D</button>
+            </div>
+          </div>
+          <div class="chart-area" id="activityChart">
+            <!-- SVG bar chart rendered by JS -->
+          </div>
+          <div class="chart-legend">
+            <span class="chart-legend-item"><span style="background:var(--danger)"></span>Fire</span>
+            <span class="chart-legend-item"><span style="background:var(--gold)"></span>Medical</span>
+            <span class="chart-legend-item"><span style="background:var(--purple)"></span>Security</span>
+            <span class="chart-legend-item"><span style="background:#FF9500"></span>Accident</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /dash-content -->
+  </div><!-- /dash-main -->
+</div><!-- /dash-layout -->
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+/* Dashboard Live Stats Polling */
+(function initDashboardPolling() {
+  function updateDashboardStats() {
+    fetch('/api/dashboard-stats/')
+      .then(res => res.json())
+      .then(data => {
+        // Update Active Incidents card
+        const activeCard = document.querySelector('.kpi-row .kpi-card:nth-child(1)');
+        if (activeCard && data.active_incidents_count !== undefined) {
+          const activeEl = activeCard.querySelector('.kpi-num .mock-stat-n') || activeCard.querySelector('.kpi-num.mock-stat-n');
+          if (activeEl) activeEl.textContent = data.active_incidents_count;
+        }
+        
+        // Update Avg Response card
+        const avgEl = document.getElementById('avg-response-display');
+        if (avgEl && data.avg_response_display !== undefined) {
+          avgEl.textContent = data.avg_response_display;
+        }
+        
+        // Update Resolved Today card
+        const resolvedCard = document.querySelector('.kpi-row .kpi-card:nth-child(3)');
+        if (resolvedCard && data.resolved_today_count !== undefined) {
+          const resolvedEl = resolvedCard.querySelector('.kpi-num.mock-stat-n');
+          if (resolvedEl) resolvedEl.textContent = data.resolved_today_count;
+          
+          const metaEl = resolvedCard.querySelector('.kpi-meta');
+          if (metaEl) metaEl.textContent = data.resolved_today_count + ' today';
+        }
+      })
+      .catch(err => console.error('Dashboard stats fetch error:', err));
+  }
+  
+  document.addEventListener('DOMContentLoaded', () => {
+    updateDashboardStats();
+    setInterval(updateDashboardStats, 5000);
+  });
+})();
+</script>
+{% endblock %}

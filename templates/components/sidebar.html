@@ -1,0 +1,77 @@
+<!-- SIDEBAR COMPONENT -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <a href="/" class="nav-logo">SNTL<span>.</span></a>
+    <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" title="Collapse sidebar" aria-label="Collapse sidebar">
+      <span class="material-symbols-outlined mi-16" aria-hidden="true">chevron_left</span>
+    </button>
+  </div>
+
+  <div class="sidebar-status">
+    <span class="dot-live"></span>
+    <span class="sidebar-status-text">SYSTEM ACTIVE</span>
+  </div>
+
+  <nav class="sidebar-nav">
+    {% if user.is_authenticated and user.role == 'admin' %}
+    <a href="{% url 'dashboard' %}" class="sidebar-link{% if request.resolver_match.url_name == 'dashboard' %} active{% endif %}">
+      <span class="material-symbols-outlined mi-16" aria-hidden="true">grid_view</span>
+      <span>Overview</span>
+    </a>
+    <a href="{% url 'incidents' %}" class="sidebar-link{% if request.resolver_match.url_name == 'incidents' %} active{% endif %}">
+      <span class="material-symbols-outlined mi-16" aria-hidden="true">emergency</span>
+      <span>Incidents</span>
+      {% if sidebar_incidents_badge %}
+      <span class="sidebar-badge">{{ sidebar_incidents_badge }}</span>
+      {% endif %}
+    </a>
+    <a href="{% url 'livemap' %}" class="sidebar-link{% if request.resolver_match.url_name == 'livemap' %} active{% endif %}">
+      <span class="material-symbols-outlined mi-16" aria-hidden="true">public</span>
+      <span>Live Map</span>
+    </a>
+    <a href="{% url 'analytics' %}" class="sidebar-link{% if request.resolver_match.url_name == 'analytics' %} active{% endif %}">
+      <span class="material-symbols-outlined mi-16" aria-hidden="true">monitoring</span>
+      <span>Analytics</span>
+    </a>
+
+    <a href="{% url 'users' %}" class="sidebar-link{% if request.resolver_match.url_name == 'users' %} active{% endif %}">
+      <span class="material-symbols-outlined mi-16" aria-hidden="true">group</span>
+      <span>Users</span>
+    </a>
+  {% endif %}
+  {% if user.is_authenticated and user.role == 'reporter' %}
+  <a href="{% url 'report' %}" class="sidebar-link {% if request.resolver_match.url_name == 'report' %} active{% endif %}">
+      <span class="material-symbols-outlined mi-16" aria-hidden="true">report</span>
+      <span>Report Incident</span>
+    </a>
+
+  <a href="{% url 'my_reports' %}"
+    class="sidebar-link {% if request.resolver_match.url_name == 'my_reports' %}active{% endif %}">
+  <span class="material-symbols-outlined mi-16" aria-hidden="true">description</span>
+  <span>MY REPORTS</span>
+  </a>
+  {% endif %}
+     <a href="{% url 'settings' %}" class="sidebar-link{% if request.resolver_match.url_name == 'settings' %} active{% endif %}">
+      <span class="material-symbols-outlined mi-16" aria-hidden="true">settings</span>
+      <span>Settings</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-user">
+    <div class="sidebar-user-avatar">{{ user.username|first|upper }}</div>
+    <div class="sidebar-user-info">
+      <span class="sidebar-user-name">{{ user.username|capfirst }}</span>
+      {% if user.role == 'admin' %}
+        <span class="sidebar-user-role">ADMINISTRATOR</span>
+      {% else %}
+        <span class="sidebar-user-role">LEVEL 1 CLEARANCE</span>
+      {% endif %}
+    </div>
+    <form method="post" action="{% url 'logout' %}" style="margin-left:auto;display:flex;">
+      {% csrf_token %}
+      <button type="submit" class="sidebar-logout" title="Log out" aria-label="Log out">
+        <span class="material-symbols-outlined mi-16" aria-hidden="true">logout</span>
+      </button>
+    </form>
+  </div>
+</aside>

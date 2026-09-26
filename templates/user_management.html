@@ -1,0 +1,397 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Users — Sentinel{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'user_management.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dash-layout">
+  {% include 'components/sidebar.html' with sidebar_incidents_badge=sidebar_incidents_badge %}
+  <div class="dash-main">
+
+    {% include 'components/topbar.html' %}
+
+    <div class="dash-content">
+
+      <!-- ── PAGE HEADER ── -->
+      <div class="usr-page-header reveal">
+        <div class="usr-page-header-left">
+          <div class="section-label">Manage</div>
+          <h1 class="usr-page-title">User Management</h1>
+          <p class="usr-page-sub">Manage system access, roles, and credentials for all Sentinel operators.</p>
+        </div>
+        <div class="usr-page-header-right">
+          <button class="btn-ghost usr-export-btn" id="usrExportBtn">
+            <span class="material-symbols-outlined mi-16" aria-hidden="true">download</span>
+            Export
+          </button>
+          <button class="btn-primary usr-add-btn" id="addUserBtn">
+            <span class="material-symbols-outlined mi-14" aria-hidden="true">person_add</span>
+            Add User
+          </button>
+        </div>
+      </div>
+
+      <!-- ── STAT STRIP ── -->
+      <div class="usr-stat-strip reveal">
+        <div class="usr-stat-cell">
+          <span class="usr-stat-n" id="statTotal" style="color:var(--white)">{{ total_users }}</span>
+          <span class="usr-stat-l">Total Users</span>
+        </div>
+        <div class="usr-stat-divider"></div>
+        <div class="usr-stat-cell">
+          <span class="usr-stat-n" id="statAdmins" style="color:var(--gold)">{{ admin_count }}</span>
+          <span class="usr-stat-l">Admins</span>
+        </div>
+        <div class="usr-stat-divider"></div>
+        <div class="usr-stat-cell">
+          <span class="usr-stat-n" id="statReporters" style="color:#B394FF">{{ reporter_count }}</span>
+          <span class="usr-stat-l">Reporters</span>
+        </div>
+        <div class="usr-stat-divider"></div>
+        <div class="usr-stat-cell">
+          <span class="usr-stat-n" id="statActive" style="color:var(--success)">{{ active_count }}</span>
+          <span class="usr-stat-l">Active</span>
+        </div>
+        <div class="usr-stat-spacer"></div>
+      </div>
+
+      <!-- ── TOOLBAR ── -->
+      <div class="usr-toolbar reveal">
+        <div class="usr-search-wrap">
+          <span class="material-symbols-outlined mi-16" aria-hidden="true">search</span>
+          <input type="text" class="usr-search" id="usrSearch" placeholder="Search by name or email…">
+          <kbd class="usr-search-kbd">/</kbd>
+        </div>
+
+        <div class="usr-role-filters" id="roleFilters">
+          <button class="usr-role-btn active" data-role="all">All</button>
+          <button class="usr-role-btn" data-role="admin">
+            <span class="usr-role-dot" style="background:var(--gold)"></span>Admin
+          </button>
+          <button class="usr-role-btn" data-role="reporter">
+            <span class="usr-role-dot" style="background:#B394FF"></span>Reporter
+          </button>
+        </div>
+
+        <div class="usr-toolbar-right">
+          <select class="usr-select" id="statusFilter">
+            <option value="all">All Statuses</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+          <select class="usr-select" id="usrPerPage">
+            <option value="15">15 / page</option>
+            <option value="25">25 / page</option>
+            <option value="50">50 / page</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- ── TABLE ── -->
+      <div class="usr-table-wrap reveal" id="tableView">
+        <table class="usr-table" id="userTable">
+          <thead>
+            <tr>
+              <th class="sortable" data-col="name">User <span class="material-symbols-outlined mi-14 sort-icon" aria-hidden="true">unfold_more</span></th>
+              <th class="sortable" data-col="email">Email <span class="material-symbols-outlined mi-14 sort-icon" aria-hidden="true">unfold_more</span></th>
+              <th class="sortable" data-col="role">Role <span class="material-symbols-outlined mi-14 sort-icon" aria-hidden="true">unfold_more</span></th>
+              <th class="sortable" data-col="status">Status <span class="material-symbols-outlined mi-14 sort-icon" aria-hidden="true">unfold_more</span></th>
+              <th class="sortable" data-col="joined">Joined <span class="material-symbols-outlined mi-14 sort-icon" aria-hidden="true">unfold_more</span></th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="userTableBody"></tbody>
+        </table>
+
+        <div class="usr-pagination">
+          <span class="usr-pagination-info" id="paginationInfo">—</span>
+          <div class="usr-pagination-controls">
+            <button class="usr-page-btn" id="prevPage" disabled>
+              <span class="material-symbols-outlined mi-16" aria-hidden="true">chevron_left</span>
+            </button>
+            <div id="pageNumbers" style="display:flex;align-items:center;gap:4px;"></div>
+            <button class="usr-page-btn" id="nextPage">
+              <span class="material-symbols-outlined mi-16" aria-hidden="true">chevron_right</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /dash-content -->
+  </div><!-- /dash-main -->
+</div><!-- /dash-layout -->
+
+
+<!-- ══════════════════════════════════
+     DETAIL DRAWER
+══════════════════════════════════ -->
+<div class="usr-drawer-overlay" id="drawerOverlay"></div>
+<aside class="usr-drawer" id="userDrawer">
+  <div class="usr-drawer-header">
+    <div class="usr-drawer-title-wrap">
+      <div class="usr-drawer-avatar" id="drawerAvatar">—</div>
+      <div>
+        <div class="usr-drawer-name" id="drawerName">—</div>
+        <div class="usr-drawer-id" id="drawerEmail">—</div>
+      </div>
+    </div>
+    <button class="usr-drawer-close" id="drawerClose">
+      <span class="material-symbols-outlined mi-16" aria-hidden="true">close</span>
+    </button>
+  </div>
+
+  <div class="usr-drawer-body">
+    <div class="usr-drawer-row">
+      <div class="usr-drawer-field">
+        <span class="usr-drawer-label">Role</span>
+        <span class="usr-drawer-value" id="drawerRole">—</span>
+      </div>
+      <div class="usr-drawer-field">
+        <span class="usr-drawer-label">Status</span>
+        <span class="usr-drawer-value" id="drawerStatus">—</span>
+      </div>
+    </div>
+    <div class="usr-drawer-row">
+      <div class="usr-drawer-field">
+        <span class="usr-drawer-label">Date Joined</span>
+        <span class="usr-drawer-value" id="drawerJoined">—</span>
+      </div>
+      <div class="usr-drawer-field">
+        <span class="usr-drawer-label">Last Login</span>
+        <span class="usr-drawer-value" id="drawerLastLogin">—</span>
+      </div>
+    </div>
+    <div class="usr-drawer-field">
+      <span class="usr-drawer-label">Incidents Reported</span>
+      <span class="usr-drawer-value" id="drawerIncidents">—</span>
+    </div>
+
+    <div class="usr-drawer-divider"></div>
+      <!-- rendered by JS -->
+    </div>
+  </div>
+
+  <div class="usr-drawer-footer">
+    <button class="btn-primary" style="flex:1;justify-content:center;" id="drawerEdit">
+      <span class="material-symbols-outlined mi-14" aria-hidden="true">edit</span>
+      Edit User
+    </button>
+    <button class="btn-ghost" style="justify-content:center;border-color:rgba(255,68,68,0.4);color:var(--danger);" id="drawerDelete">
+      <span class="material-symbols-outlined mi-14" aria-hidden="true">delete</span>
+      Delete
+    </button>
+  </div>
+</aside>
+
+
+<!-- ══════════════════════════════════
+     ADD USER MODAL
+══════════════════════════════════ -->
+<div class="usr-modal-overlay" id="addModalOverlay"></div>
+<div class="usr-modal" id="addUserModal" role="dialog" aria-modal="true">
+  <div class="usr-modal-header">
+    <div>
+      <span class="login-eyebrow" style="margin-bottom:6px">
+        <span class="pulse"></span> New Operator
+      </span>
+      <h2 class="usr-modal-title">Add User</h2>
+    </div>
+    <button class="usr-drawer-close" id="addModalClose">
+      <span class="material-symbols-outlined mi-16" aria-hidden="true">close</span>
+    </button>
+  </div>
+  <div class="usr-modal-body">
+    <div class="usr-modal-grid">
+      <div class="form-group">
+        <label class="form-label">First Name</label>
+        <div class="input-wrap">
+          <input type="text" class="form-input" id="addFirstName" placeholder="e.g. Juan">
+          <span class="input-line"></span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Last Name</label>
+        <div class="input-wrap">
+          <input type="text" class="form-input" id="addLastName" placeholder="e.g. dela Cruz">
+          <span class="input-line"></span>
+        </div>
+      </div>
+      <div class="form-group usr-modal-full">
+        <label class="form-label">Email Address</label>
+        <div class="input-wrap">
+          <input type="email" class="form-input" id="addEmail" placeholder="operator@sentinel.gov">
+          <span class="input-line"></span>
+        </div>
+      </div>
+      <div class="form-group usr-modal-full">
+        <label class="form-label">Username</label>
+        <div class="input-wrap">
+          <input type="text" class="form-input" id="addUsername" placeholder="e.g. jdelacruz">
+          <span class="input-line"></span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Role</label>
+        <select class="form-input usr-select-full" id="addRole">
+          <option value="admin">Admin</option>
+          <option value="reporter">Reporter</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <div class="input-wrap" style="position:relative;">
+          <input type="password" class="form-input" id="addPassword" placeholder="Min. 8 characters" style="padding-right:44px;">
+          <button type="button" class="eye-btn" onclick="toggleFieldPassword('addPassword', this)">
+            <span class="material-symbols-outlined mi-16" aria-hidden="true">visibility</span>
+          </button>
+          <span class="input-line"></span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm Password</label>
+        <div class="input-wrap" style="position:relative;">
+          <input type="password" class="form-input" id="addPasswordConfirm" placeholder="Repeat password" style="padding-right:44px;">
+          <button type="button" class="eye-btn" onclick="toggleFieldPassword('addPasswordConfirm', this)">
+            <span class="material-symbols-outlined mi-16" aria-hidden="true">visibility</span>
+          </button>
+          <span class="input-line"></span>
+        </div>
+      </div>
+    </div>
+    <div class="usr-modal-alert" id="addAlert" style="display:none;"></div>
+  </div>
+  <div class="usr-modal-footer">
+    <button class="btn-ghost" id="addModalCancel">Cancel</button>
+    <button class="btn-primary" id="addModalSubmit" style="justify-content:center;">
+      <span class="material-symbols-outlined mi-14" aria-hidden="true">person_add</span>
+      Create User
+    </button>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     EDIT USER MODAL
+══════════════════════════════════ -->
+<div class="usr-modal-overlay" id="editModalOverlay"></div>
+<div class="usr-modal" id="editUserModal" role="dialog" aria-modal="true">
+  <div class="usr-modal-header">
+    <div>
+      <span class="login-eyebrow" style="margin-bottom:6px">
+        <span class="pulse"></span> Modify Operator
+      </span>
+      <h2 class="usr-modal-title">Edit User</h2>
+    </div>
+    <button class="usr-drawer-close" id="editModalClose">
+      <span class="material-symbols-outlined mi-16" aria-hidden="true">close</span>
+    </button>
+  </div>
+  <div class="usr-modal-body">
+    <input type="hidden" id="editUserId">
+    <div class="usr-modal-grid">
+      <div class="form-group">
+        <label class="form-label">First Name</label>
+        <div class="input-wrap">
+          <input type="text" class="form-input" id="editFirstName">
+          <span class="input-line"></span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Last Name</label>
+        <div class="input-wrap">
+          <input type="text" class="form-input" id="editLastName">
+          <span class="input-line"></span>
+        </div>
+      </div>
+      <div class="form-group usr-modal-full">
+        <label class="form-label">Email Address</label>
+        <div class="input-wrap">
+          <input type="email" class="form-input" id="editEmail">
+          <span class="input-line"></span>
+        </div>
+      </div>
+      <div class="form-group usr-modal-full">
+        <label class="form-label">Username</label>
+        <div class="input-wrap">
+          <input type="text" class="form-input" id="editUsername">
+          <span class="input-line"></span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Role</label>
+        <select class="form-input usr-select-full" id="editRole">
+          <option value="admin">Admin</option>
+          <option value="reporter">Reporter</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <select class="form-input usr-select-full" id="editStatus">
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">New Password <span style="color:var(--muted);font-size:0.55rem;letter-spacing:0;">(leave blank to keep)</span></label>
+        <div class="input-wrap" style="position:relative;">
+          <input type="password" class="form-input" id="editPassword" placeholder="Optional" style="padding-right:44px;">
+          <button type="button" class="eye-btn" onclick="toggleFieldPassword('editPassword', this)">
+            <span class="material-symbols-outlined mi-16" aria-hidden="true">visibility</span>
+          </button>
+          <span class="input-line"></span>
+        </div>
+      </div>
+    </div>
+    <div class="usr-modal-alert" id="editAlert" style="display:none;"></div>
+  </div>
+  <div class="usr-modal-footer">
+    <button class="btn-ghost" id="editModalCancel">Cancel</button>
+    <button class="btn-primary" id="editModalSubmit" style="justify-content:center;">
+      <span class="material-symbols-outlined mi-14" aria-hidden="true">description</span>
+      Save Changes
+    </button>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     DELETE CONFIRM MODAL
+══════════════════════════════════ -->
+<div class="usr-modal-overlay" id="deleteModalOverlay"></div>
+<div class="usr-modal usr-modal-sm" id="deleteUserModal" role="dialog" aria-modal="true">
+  <div class="usr-modal-header">
+    <h2 class="usr-modal-title" style="color:var(--danger);">Delete User</h2>
+    <button class="usr-drawer-close" id="deleteModalClose">
+      <span class="material-symbols-outlined mi-16" aria-hidden="true">close</span>
+    </button>
+  </div>
+  <div class="usr-modal-body" style="flex:none;">
+    <div class="usr-delete-warn">
+      <div class="usr-delete-warn-icon">
+        <span class="material-symbols-outlined mi-16" aria-hidden="true">warning</span>
+      </div>
+      <div>
+        <p class="usr-delete-warn-title">This action cannot be undone.</p>
+        <p class="usr-delete-warn-sub">User <strong id="deleteUserName">—</strong> and all their associated session data will be permanently removed from the system.</p>
+      </div>
+    </div>
+    <input type="hidden" id="deleteUserId">
+  </div>
+  <div class="usr-modal-footer">
+    <button class="btn-ghost" id="deleteModalCancel">Cancel</button>
+    <button class="btn-primary" id="deleteModalConfirm" style="background:var(--danger);justify-content:center;">
+      <span class="material-symbols-outlined mi-14" aria-hidden="true">delete</span>
+      Delete Permanently
+    </button>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'user_management.js' %}"></script>
+{% endblock %}

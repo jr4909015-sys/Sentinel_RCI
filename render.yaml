@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: sentinel-rci
+    runtime: python
+    buildCommand: ./build.sh
+    startCommand: python -m gunicorn IRSYS.wsgi:application -k uvicorn.workers.UvicornWorker
+    envVars:
+      - key: SECRET_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-flash-lite-latest
+      - key: FIELD_ENCRYPTION_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: "localhost,127.0.0.1"
+      - key: CSRF_TRUSTED_ORIGINS
+        sync: false

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Live Campus Map — Sentinel{% endblock %}
+
+{% block content %}
+
+<!-- ── LAYOUT ── -->
+<div class="dash-layout livemap-layout">
+  <!-- ── SIDEBAR ── -->
+  {% include 'components/sidebar.html' with sidebar_incidents_badge=active_incidents_count %}
+
+  <!-- ── MAIN CONTENT ── -->
+  <div class="dash-main">
+
+    <!-- Top bar -->
+    {% include 'components/topbar.html' %}
+
+    <div class="dash-content livemap-content">
+      <div class="dash-mid-row livemap-row">
+        <div class="dash-panel dash-panel-map reveal livemap-panel">
+          <div class="panel-header">
+            <span class="panel-title">LIVE CAMPUS MAP</span>
+            <div class="panel-header-actions">
+              <span class="panel-live-tag"><span class="dot-live"></span> LIVE</span>
+              <button class="panel-btn">Full Campus</button>
+            </div>
+          </div>
+
+          <div class="map-container livemap-map-container">
+            <div id="liveCampusMap" class="campus-image-map">
+              <img src="{% static 'images/campus-map.png' %}" alt="Campus map" class="campus-map-image">
+              <div id="dashboardMarkerLayer"></div>
+            </div>
+            {{ dashboard_active_incidents|json_script:"dashboard-active-incidents" }}
+          </div>
+
+          <div class="map-legend" style="margin-top: 18px; display: flex; flex-wrap: wrap; gap: 12px;">
+            <span class="legend-item"><span class="legend-dot danger"></span>Fire</span>
+            <span class="legend-item"><span class="legend-dot gold"></span>Medical</span>
+            <span class="legend-item"><span class="legend-dot sec"></span>Security</span>
+            <span class="legend-item"><span class="legend-dot accident"></span>Accident</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

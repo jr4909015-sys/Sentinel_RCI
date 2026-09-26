@@ -1,0 +1,959 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}My Reports — Sentinel{% endblock %}
+
+{% block content %}
+<div class="dash-layout">
+  {% include 'components/sidebar.html' with sidebar_incidents_badge=active_incidents_count %}
+
+  <div class="dash-main">
+    {% include 'components/topbar.html' %}
+
+    <div class="dash-content myreports-content">
+
+      <!-- Page Header -->
+      <div class="myreports-header">
+        <div class="myreports-header-left">
+          <div class="myreports-header-icon">
+            <span class="material-symbols-outlined mi-16" aria-hidden="true">send</span>
+          </div>
+          <div>
+            <div class="myreports-title">MY REPORTS</div>
+            <div class="myreports-sub">YOUR FILED INCIDENT REPORTS</div>
+          </div>
+        </div>
+        <a href="{% url 'report' %}" class="myreports-new-btn">
+          <span class="material-symbols-outlined mi-14" aria-hidden="true">add</span>
+          FILE NEW REPORT
+        </a>
+      </div>
+
+      <!-- Stats Strip -->
+      <div class="myreports-stats">
+        <div class="myreport-stat">
+          <span class="myreport-stat-num" id="statTotal">{{ total_count }}</span>
+          <span class="myreport-stat-label">TOTAL FILED</span>
+        </div>
+        <div class="myreport-stat-divider"></div>
+        <div class="myreport-stat">
+          <span class="myreport-stat-num danger" id="statActive">{{ active_count }}</span>
+          <span class="myreport-stat-label">ACTIVE</span>
+        </div>
+        <div class="myreport-stat-divider"></div>
+        <div class="myreport-stat">
+          <span class="myreport-stat-num gold" id="statResolved">{{ resolved_count }}</span>
+          <span class="myreport-stat-label">RESOLVED</span>
+        </div>
+        <div class="myreport-stat-divider"></div>
+        <div class="myreport-stat">
+          <span class="myreport-stat-num muted" id="statCancelled">{{ cancelled_count }}</span>
+          <span class="myreport-stat-label">CANCELLED</span>
+        </div>
+      </div>
+
+      <!-- Filter Tabs -->
+      <div class="myreports-filters">
+        <button class="myreports-filter active" data-filter="all">
+          ALL <span class="myreports-filter-count">{{ total_count }}</span>
+        </button>
+        <button class="myreports-filter" data-filter="active">
+          ACTIVE <span class="myreports-filter-count danger">{{ active_count }}</span>
+        </button>
+        <button class="myreports-filter" data-filter="dispatched">
+          DISPATCHED <span class="myreports-filter-count">{{ dispatched_count }}</span>
+        </button>
+        <button class="myreports-filter" data-filter="onscene">
+          ON SCENE <span class="myreports-filter-count">{{ onscene_count }}</span>
+        </button>
+        <button class="myreports-filter" data-filter="investigating">
+          INVESTIGATING <span class="myreports-filter-count">{{ investigating_count }}</span>
+        </button>
+        <button class="myreports-filter" data-filter="resolved">
+          RESOLVED <span class="myreports-filter-count gold">{{ resolved_count }}</span>
+        </button>
+      </div>
+
+      <!-- Report Grid -->
+      <div class="myreports-grid" id="reportsGrid">
+        {% for inc in reports %}
+        <div class="report-card reveal" data-status="{{ inc.status }}" data-id="{{ inc.id }}">
+
+          <!-- Card Top Bar -->
+          <div class="report-card-topbar">
+            <span class="report-type-badge {{ inc.category }}">
+              <span class="type-icon">
+                {% if inc.category == 'fire' %}
+                <span class="material-symbols-outlined mi-14" aria-hidden="true">local_fire_department</span>
+                {% elif inc.category == 'med' %}
+                <span class="material-symbols-outlined mi-14" aria-hidden="true">medical_services</span>
+                {% elif inc.category == 'sec' %}
+                <span class="material-symbols-outlined mi-14" aria-hidden="true">lock</span>
+                {% else %}
+                <span class="material-symbols-outlined mi-14" aria-hidden="true">warning</span>
+                {% endif %}
+              </span>
+              {{ inc.get_category_display|upper }}
+            </span>
+            <span class="report-card-id">#{{ inc.id|stringformat:"s"|slice:":8"|upper }}</span>
+          </div>
+
+          <!-- Status Row -->
+          <div class="report-card-status-row">
+            <span class="inc-status {{ inc.status }}">
+              {% if inc.status == 'active' %}
+                <span class="status-pulse"></span>
+              {% endif %}
+              {{ inc.get_status_display|upper }}
+            </span>
+            <span class="report-card-time">{{ inc.created_at|timesince }} ago</span>
+          </div>
+
+          <!-- Description -->
+          <div class="report-card-desc">{{ inc.description|truncatechars:120 }}</div>
+
+          <!-- Location -->
+          <div class="report-card-location">
+            <span class="material-symbols-outlined mi-16" aria-hidden="true">location_on</span>
+            {{ inc.location_display|default:inc.location|default:"Location not specified" }}
+            {% if inc.specific_location %}
+              <span class="report-card-subloc">— {{ inc.specific_location }}</span>
+            {% endif %}
+          </div>
+
+          <!-- Footer Actions -->
+          <div class="report-card-footer">
+            <span class="report-card-date">{{ inc.created_at|date:"M d, Y · H:i" }}</span>
+            <div class="report-card-actions">
+              <button class="report-action-btn view-btn" onclick="openViewModal('{{ inc.id }}')" title="View details">
+                <span class="material-symbols-outlined mi-16" aria-hidden="true">visibility</span>
+                VIEW
+              </button>
+              {% if inc.status == 'active' or inc.status == 'investigating' %}
+              <button class="report-action-btn cancel-btn" onclick="confirmCancel('{{ inc.id }}')" title="Cancel report">
+                <span class="material-symbols-outlined mi-14" aria-hidden="true">cancel</span>
+                CANCEL
+              </button>
+              {% endif %}
+            </div>
+          </div>
+
+        </div>
+        {% empty %}
+        <div class="myreports-empty" id="emptyState">
+          <div class="myreports-empty-icon">
+            <span class="material-symbols-outlined mi-16" aria-hidden="true">send</span>
+          </div>
+          <div class="myreports-empty-title">NO REPORTS FILED</div>
+          <div class="myreports-empty-sub">You haven't filed any incident reports yet.</div>
+          <a href="{% url 'report' %}" class="myreports-new-btn" style="margin-top:16px;">FILE FIRST REPORT</a>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Filtered empty state (hidden by default, shown by JS) -->
+      <div class="myreports-empty" id="filteredEmpty" style="display:none;">
+        <div class="myreports-empty-icon">
+          <span class="material-symbols-outlined mi-16" aria-hidden="true">search</span>
+        </div>
+        <div class="myreports-empty-title">NO REPORTS FOUND</div>
+        <div class="myreports-empty-sub">No reports match the selected filter.</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     VIEW MODAL
+══════════════════════════════════════ -->
+<div class="modal-overlay" id="viewModalOverlay"></div>
+<div class="modal" id="viewModal">
+
+  <div class="modal-topbar">
+    <div class="modal-topbar-left">
+      <div class="modal-icon">
+        <span class="material-symbols-outlined mi-16" aria-hidden="true">visibility</span>
+      </div>
+      <div>
+        <div class="modal-title">INCIDENT REPORT</div>
+        <div class="modal-sub" id="modalReportId">—</div>
+      </div>
+    </div>
+    <button class="modal-close-btn" onclick="closeViewModal()">
+      <span class="material-symbols-outlined mi-16" aria-hidden="true">close</span>
+    </button>
+  </div>
+
+  <div class="modal-body" id="modalBody">
+    <div class="modal-loading">
+      <div class="modal-loading-dot"></div>
+      <div class="modal-loading-dot"></div>
+      <div class="modal-loading-dot"></div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════
+     CANCEL CONFIRM MODAL
+══════════════════════════════════════ -->
+<div class="modal-overlay" id="cancelModalOverlay"></div>
+<div class="modal modal-sm" id="cancelModal">
+
+  <div class="modal-topbar">
+    <div class="modal-topbar-left">
+      <div class="modal-icon danger">
+        <span class="material-symbols-outlined mi-14" aria-hidden="true">cancel</span>
+      </div>
+      <div>
+        <div class="modal-title">CANCEL REPORT</div>
+        <div class="modal-sub">This action cannot be undone</div>
+      </div>
+    </div>
+    <button class="modal-close-btn" onclick="closeCancelModal()">
+      <span class="material-symbols-outlined mi-16" aria-hidden="true">close</span>
+    </button>
+  </div>
+
+  <div class="modal-body">
+    <div class="cancel-warning">
+      <span class="material-symbols-outlined mi-16" aria-hidden="true">warning</span>
+      <div>
+        <div class="cancel-warning-title">Cancel this incident report?</div>
+        <div class="cancel-warning-sub">Cancelling will mark this report as withdrawn. Authorities will be notified. Only cancel if the incident is no longer occurring or was filed in error.</div>
+      </div>
+    </div>
+
+    <div class="cancel-modal-actions">
+      <button class="modal-btn-ghost" onclick="closeCancelModal()">KEEP REPORT</button>
+      <button class="modal-btn-danger" id="confirmCancelBtn" onclick="executeCancel()">
+        <span id="cancelBtnLabel">CONFIRM CANCEL</span>
+      </button>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- Embed reports data for JS -->
+{{ reports_json|json_script:"reports-data" }}
+
+
+<style>
+/* ══ MY REPORTS PAGE ══ */
+.myreports-content {
+  padding: 28px;
+  gap: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.myreports-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.myreports-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.myreports-header-icon {
+  width: 40px; height: 40px;
+  background: rgba(245,196,0,0.1);
+  border: 1px solid rgba(245,196,0,0.3);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--gold); flex-shrink: 0;
+}
+.myreports-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800; font-size: 1.1rem;
+  letter-spacing: 0.12em; color: var(--white);
+}
+.myreports-sub {
+  font-size: 0.58rem; letter-spacing: 0.2em;
+  color: var(--muted); text-transform: uppercase; margin-top: 2px;
+}
+.myreports-new-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--gold); color: var(--bg);
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 700; font-size: 0.68rem;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 10px 18px; border: none; cursor: pointer;
+  text-decoration: none;
+  transition: background 0.2s, transform 0.15s;
+}
+.myreports-new-btn:hover { background: #FFD633; transform: translateY(-1px); }
+
+/* Stats */
+.myreports-stats {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 18px 28px;
+  gap: 0;
+  flex-wrap: wrap;
+}
+.myreport-stat { display: flex; flex-direction: column; gap: 4px; padding: 0 28px 0 0; }
+.myreport-stat:first-child { padding-left: 0; }
+.myreport-stat-num {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800; font-size: 2rem;
+  color: var(--white); line-height: 1;
+}
+.myreport-stat-num.danger { color: var(--danger); }
+.myreport-stat-num.gold { color: var(--gold); }
+.myreport-stat-num.muted { color: var(--muted); }
+.myreport-stat-label {
+  font-size: 0.55rem; letter-spacing: 0.25em;
+  text-transform: uppercase; color: var(--muted);
+}
+.myreport-stat-divider {
+  width: 1px; height: 40px;
+  background: var(--border); margin: 0 28px;
+  flex-shrink: 0;
+}
+
+/* Filters */
+.myreports-filters {
+  display: flex; gap: 0;
+  border: 1px solid var(--border);
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  background: var(--surface);
+}
+.myreports-filter {
+  flex-shrink: 0;
+  background: none; border: none;
+  border-right: 1px solid var(--border);
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.58rem; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 10px 16px; cursor: pointer;
+  display: flex; align-items: center; gap: 7px;
+  transition: color 0.2s, background 0.2s;
+  white-space: nowrap;
+}
+.myreports-filter:last-child { border-right: none; }
+.myreports-filter:hover { color: var(--white); background: var(--surface2); }
+.myreports-filter.active { color: var(--gold); background: rgba(245,196,0,0.06); border-bottom: 2px solid var(--gold); }
+.myreports-filter-count {
+  font-size: 0.52rem; font-weight: 700;
+  background: var(--bg); border: 1px solid var(--border);
+  padding: 1px 6px; color: var(--muted);
+}
+.myreports-filter-count.danger { color: var(--danger); border-color: rgba(255,68,68,0.3); background: rgba(255,68,68,0.08); }
+.myreports-filter-count.gold   { color: var(--gold);   border-color: rgba(245,196,0,0.3); background: rgba(245,196,0,0.08); }
+
+/* Grid */
+.myreports-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 12px;
+}
+
+/* Report Card */
+.report-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 18px;
+  display: flex; flex-direction: column; gap: 12px;
+  transition: border-color 0.2s, background 0.2s;
+  position: relative; overflow: hidden;
+}
+.report-card:hover { background: var(--surface2); border-color: rgba(245,196,0,0.2); }
+.report-card[data-status="active"]  { border-left: 2px solid var(--danger); }
+.report-card[data-status="resolved"]{ border-left: 2px solid var(--success); }
+.report-card[data-status="dispatched"]{ border-left: 2px solid #FF9500; }
+.report-card[data-status="investigating"]{ border-left: 2px solid #B394FF; }
+.report-card[data-status="cancelled"]{ border-left: 2px solid var(--border); opacity: 0.6; }
+
+.report-card-topbar {
+  display: flex; align-items: center;
+  justify-content: space-between; gap: 8px;
+}
+
+/* Type badge */
+.report-type-badge {
+  font-size: 0.6rem; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 4px 10px;
+  display: flex; align-items: center; gap: 8px;
+}
+.report-type-badge .type-icon {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  align-items: center;
+  justify-content: center;
+}
+.report-type-badge .type-icon svg {
+  width: 14px;
+  height: 14px;
+}
+.report-type-badge.fire { background: rgba(255,68,68,0.12); color: var(--danger); border: 1px solid rgba(255,68,68,0.3); }
+.report-type-badge.med  { background: rgba(245,196,0,0.12); color: var(--gold);   border: 1px solid rgba(245,196,0,0.3); }
+.report-type-badge.sec  { background: rgba(179,148,255,0.12); color: #B394FF;     border: 1px solid rgba(179,148,255,0.3); }
+.report-type-badge.accident { background: rgba(255,149,0,0.12); color: #FF9500;   border: 1px solid rgba(255,149,0,0.3); }
+
+.report-card-id {
+  font-family: 'Syne Mono', monospace;
+  font-size: 0.58rem; color: var(--danger);
+  letter-spacing: 0.1em;
+}
+
+/* Status row */
+.report-card-status-row {
+  display: flex; align-items: center;
+  justify-content: space-between; gap: 8px;
+}
+.report-card-time {
+  font-size: 0.58rem; color: var(--gold);
+  font-family: 'Syne Mono', monospace;
+}
+
+/* Status badge with pulse */
+.inc-status {
+  font-size: 0.55rem; letter-spacing: 0.15em;
+  text-transform: uppercase; padding: 3px 8px;
+  font-weight: 700;
+  display: flex; align-items: center; gap: 5px;
+}
+.status-pulse {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--danger); flex-shrink: 0;
+  animation: blink 1.2s step-end infinite;
+}
+.inc-status.active        { background: rgba(255,68,68,0.1);    color: var(--danger);  border: 1px solid rgba(255,68,68,0.3); }
+.inc-status.dispatched    { background: rgba(255,149,0,0.1);    color: #FF9500;        border: 1px solid rgba(255,149,0,0.3); }
+.inc-status.onscene       { background: rgba(76,175,80,0.1);    color: var(--success); border: 1px solid rgba(76,175,80,0.3); }
+.inc-status.investigating { background: rgba(179,148,255,0.1);  color: #B394FF;        border: 1px solid rgba(179,148,255,0.3); }
+.inc-status.resolved      { background: rgba(76,175,80,0.08);   color: var(--success); border: 1px solid rgba(76,175,80,0.2); }
+.inc-status.cancelled     { background: rgba(122,106,154,0.08); color: var(--muted);   border: 1px solid var(--border); }
+
+.report-card-desc {
+  font-size: 0.72rem; color: var(--muted);
+  line-height: 1.6; flex: 1;
+}
+
+.report-card-location {
+  display: flex; align-items: flex-start; gap: 6px;
+  font-size: 0.65rem; color: var(--muted);
+  padding: 8px 10px;
+  background: var(--bg); border: 1px solid var(--border);
+  line-height: 1.4;
+}
+.report-card-location svg { flex-shrink: 0; color: var(--gold); margin-top: 1px; }
+.report-card-subloc { color: var(--border); }
+
+/* Footer */
+.report-card-footer {
+  display: flex; align-items: center;
+  justify-content: space-between; gap: 8px;
+  padding-top: 10px; border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.report-card-date {
+  font-family: 'Syne Mono', monospace;
+  font-size: 0.56rem; color: var(--gold);
+  letter-spacing: 0.08em;
+}
+.report-card-actions { display: flex; gap: 6px; }
+
+.report-action-btn {
+  display: flex; align-items: center; gap: 5px;
+  background: none; border: 1px solid var(--border);
+  color: var(--muted); font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.56rem; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 5px 10px; cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+.report-action-btn.view-btn:hover  { color: var(--gold);   border-color: var(--gold);   background: rgba(245,196,0,0.05); }
+.report-action-btn.cancel-btn:hover{ color: var(--danger); border-color: var(--danger); background: rgba(255,68,68,0.05); }
+
+/* Empty state */
+.myreports-empty {
+  grid-column: 1 / -1;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 12px; padding: 64px 24px; text-align: center;
+  border: 1px dashed var(--border);
+  background: var(--surface);
+}
+.myreports-empty-icon {
+  width: 64px; height: 64px;
+  background: rgba(245,196,0,0.06);
+  border: 1px solid rgba(245,196,0,0.15);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--gold);
+}
+.myreports-empty-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800; font-size: 0.9rem;
+  letter-spacing: 0.15em; color: var(--white);
+}
+.myreports-empty-sub { font-size: 0.72rem; color: var(--muted); }
+
+/* ══ MODAL ══ */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(8,4,20,0.7);
+  backdrop-filter: blur(3px);
+  z-index: 500; opacity: 0; pointer-events: none;
+  transition: opacity 0.3s;
+}
+.modal-overlay.visible { opacity: 1; pointer-events: all; }
+
+.modal {
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -52%) scale(0.96);
+  width: 520px; max-width: calc(100vw - 32px);
+  max-height: 88vh;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  z-index: 600;
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s, transform 0.3s;
+  overflow: hidden;
+}
+.modal.open {
+  opacity: 1; pointer-events: all;
+  transform: translate(-50%, -50%) scale(1);
+}
+.modal.modal-sm { width: 420px; }
+
+.modal-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; border-bottom: 1px solid var(--border);
+  background: var(--bg); flex-shrink: 0;
+}
+.modal-topbar-left { display: flex; align-items: center; gap: 12px; }
+.modal-icon {
+  width: 34px; height: 34px;
+  background: rgba(245,196,0,0.1); border: 1px solid rgba(245,196,0,0.3);
+  display: flex; align-items: center; justify-content: center; color: var(--gold);
+  flex-shrink: 0;
+}
+.modal-icon.danger { background: rgba(255,68,68,0.1); border-color: rgba(255,68,68,0.3); color: var(--danger); }
+.modal-title {
+  font-family: 'Syne', sans-serif; font-weight: 800;
+  font-size: 0.82rem; letter-spacing: 0.12em; color: var(--white);
+}
+.modal-sub { font-size: 0.58rem; letter-spacing: 0.1em; color: var(--muted); margin-top: 2px; }
+.modal-close-btn {
+  background: none; border: 1px solid var(--border); color: var(--muted);
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: color 0.2s, border-color 0.2s; flex-shrink: 0;
+}
+.modal-close-btn:hover { color: var(--danger); border-color: var(--danger); }
+
+.modal-body {
+  flex: 1; overflow-y: auto; padding: 20px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.modal-body::-webkit-scrollbar { width: 4px; }
+.modal-body::-webkit-scrollbar-track { background: var(--bg); }
+.modal-body::-webkit-scrollbar-thumb { background: var(--border); }
+
+/* Modal loading */
+.modal-loading {
+  display: flex; align-items: center; justify-content: center;
+  gap: 6px; padding: 40px;
+}
+.modal-loading-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--gold); opacity: 0.3;
+  animation: loadPulse 1.2s ease-in-out infinite;
+}
+.modal-loading-dot:nth-child(2) { animation-delay: 0.2s; }
+.modal-loading-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes loadPulse {
+  0%,100% { opacity: 0.2; transform: scale(0.8); }
+  50%      { opacity: 1;   transform: scale(1); }
+}
+
+/* Modal detail rows */
+.modal-section-label {
+  font-size: 0.55rem; letter-spacing: 0.25em; text-transform: uppercase;
+  color: var(--muted); padding-bottom: 8px;
+  border-bottom: 1px solid var(--border); margin-bottom: 2px;
+}
+.modal-detail-row {
+  display: flex; gap: 12px; align-items: flex-start;
+  font-size: 0.72rem;
+}
+.modal-detail-label {
+  font-size: 0.56rem; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--muted); flex-shrink: 0; width: 90px; margin-top: 2px;
+}
+.modal-detail-value { color: var(--white); line-height: 1.6; flex: 1; }
+.modal-detail-value.muted { color: var(--muted); }
+
+.modal-desc-box {
+  background: var(--bg); border: 1px solid var(--border);
+  padding: 14px; font-size: 0.72rem; color: var(--muted);
+  line-height: 1.7;
+}
+
+/* Timeline in modal */
+.modal-timeline { display: flex; flex-direction: column; gap: 0; }
+.modal-timeline-item {
+  display: flex; gap: 14px; align-items: flex-start;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+}
+.modal-timeline-item:last-child { border-bottom: none; }
+.timeline-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--border); flex-shrink: 0; margin-top: 4px;
+}
+.timeline-dot.active-dot   { background: var(--danger); box-shadow: 0 0 6px rgba(255,68,68,0.4); }
+.timeline-dot.success-dot  { background: var(--success); }
+.timeline-dot.gold-dot     { background: var(--gold); }
+.timeline-dot.purple-dot   { background: #B394FF; }
+.modal-timeline-label { font-size: 0.65rem; color: var(--white); font-weight: 500; }
+.modal-timeline-time  { font-size: 0.58rem; color: var(--border); font-family: 'Syne Mono', monospace; margin-top: 2px; }
+
+/* Cancel modal */
+.cancel-warning {
+  display: flex; gap: 14px; align-items: flex-start;
+  padding: 16px; background: rgba(255,68,68,0.05);
+  border: 1px solid rgba(255,68,68,0.2); margin-bottom: 4px;
+}
+.cancel-warning svg { flex-shrink: 0; color: #FF9500; margin-top: 2px; }
+.cancel-warning-title { font-size: 0.78rem; font-weight: 600; color: var(--white); margin-bottom: 6px; }
+.cancel-warning-sub { font-size: 0.68rem; color: var(--muted); line-height: 1.6; }
+.cancel-modal-actions { display: flex; gap: 10px; padding-top: 4px; }
+.modal-btn-ghost {
+  flex: 1; background: none; border: 1px solid var(--border); color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 12px 18px; cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.modal-btn-ghost:hover { border-color: var(--gold); color: var(--gold); }
+.modal-btn-danger {
+  flex: 1; background: var(--danger); color: #fff;
+  font-family: 'IBM Plex Mono', monospace; font-weight: 700;
+  font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 12px 18px; border: none; cursor: pointer;
+  transition: background 0.2s; opacity: 1;
+}
+.modal-btn-danger:hover   { background: #CC0000; }
+.modal-btn-danger:disabled{ opacity: 0.5; cursor: not-allowed; }
+
+@media (max-width: 768px) {
+  .myreports-content { padding: 16px; }
+  .myreports-stats { padding: 14px 16px; }
+  .myreport-stat-divider { margin: 0 16px; }
+  .myreports-grid { grid-template-columns: 1fr; }
+  .modal { width: calc(100vw - 24px); max-height: 92vh; }
+}
+@media (max-width: 480px) {
+  .myreports-stats { flex-wrap: wrap; gap: 16px; }
+  .myreport-stat-divider { display: none; }
+  .myreport-stat { flex: 1; min-width: 80px; padding: 0; }
+  .myreports-filters { flex-wrap: nowrap; overflow-x: auto; }
+}
+</style>
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+/* ============================================================
+   MY REPORTS PAGE SCRIPTS
+   ============================================================ */
+
+/* Embed data from Django */
+var reportsData = [];
+try {
+  var dataEl = document.getElementById('reports-data');
+  if (dataEl) reportsData = JSON.parse(dataEl.textContent || '[]');
+} catch(e) { reportsData = []; }
+
+/* Build a quick lookup map */
+var reportsMap = {};
+reportsData.forEach(function(r) { reportsMap[r.id] = r; });
+
+var cancelTargetId = null;
+
+
+/* ============================================================
+   1. FILTER TABS
+   ============================================================ */
+(function initFilters() {
+  var btns  = document.querySelectorAll('.myreports-filter');
+  var cards = document.querySelectorAll('.report-card');
+  var filteredEmpty = document.getElementById('filteredEmpty');
+
+  btns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var filter = btn.dataset.filter;
+      btns.forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+
+      var visible = 0;
+      cards.forEach(function(card) {
+        var match = filter === 'all' || card.dataset.status === filter;
+        card.style.display = match ? '' : 'none';
+        if (match) visible++;
+      });
+
+      if (filteredEmpty) {
+        filteredEmpty.style.display = (visible === 0 && cards.length > 0) ? 'flex' : 'none';
+      }
+    });
+  });
+})();
+
+
+/* ============================================================
+   2. VIEW MODAL
+   ============================================================ */
+function openViewModal(id) {
+  var report = reportsMap[id];
+  if (!report) return;
+
+  /* Update report ID sub-label */
+  var subEl = document.getElementById('modalReportId');
+  if (subEl) subEl.textContent = '#' + String(id).slice(0,8).toUpperCase();
+
+  /* Build modal content */
+  var typeMeta = {
+    fire:     { label:'FIRE',     color:'var(--danger)', icon:'<span class="material-symbols-outlined mi-14" aria-hidden="true">local_fire_department</span>' },
+    med:      { label:'MEDICAL',  color:'var(--gold)',   icon:'<span class="material-symbols-outlined mi-14" aria-hidden="true">medical_services</span>' },
+    sec:      { label:'SECURITY', color:'#B394FF',       icon:'<span class="material-symbols-outlined mi-14" aria-hidden="true">lock</span>' },
+    accident: { label:'ACCIDENT', color:'#FF9500',       icon:'<span class="material-symbols-outlined mi-14" aria-hidden="true">warning</span>' },
+  };
+  var statusMeta = {
+    active:        { label:'Active',        dotClass:'active-dot'  },
+    dispatched:    { label:'Dispatched',    dotClass:'gold-dot'    },
+    onscene:       { label:'On Scene',      dotClass:'success-dot' },
+    investigating: { label:'Investigating', dotClass:'purple-dot'  },
+    resolved:      { label:'Resolved',      dotClass:'success-dot' },
+    cancelled:     { label:'Cancelled',     dotClass:''            },
+  };
+  var tm = typeMeta[report.category]     || { label: report.category.toUpperCase(), color: 'var(--muted)', icon: '<span class="material-symbols-outlined mi-14" aria-hidden="true">description</span>' };
+  var sm = statusMeta[report.status]     || { label: report.status, dotClass: '' };
+  var loc = report.location_display || report.location || 'Not specified';
+  if (report.specific_location) loc += ' — ' + report.specific_location;
+
+  var html = '';
+
+  /* Type + status */
+  html += '<div class="modal-section-label">INCIDENT DETAILS</div>';
+  html += '<div class="modal-detail-row">';
+  html +=   '<span class="modal-detail-label">Type</span>';
+  html +=   '<span class="modal-detail-value">' + tm.icon + ' <strong style="color:' + tm.color + '">' + tm.label + '</strong></span>';
+  html += '</div>';
+  html += '<div class="modal-detail-row">';
+  html +=   '<span class="modal-detail-label">Status</span>';
+  html +=   '<span class="modal-detail-value"><span class="inc-status ' + report.status + '">';
+  if (report.status === 'active') html += '<span class="status-pulse"></span>';
+  html +=     sm.label.toUpperCase() + '</span></span>';
+  html += '</div>';
+  html += '<div class="modal-detail-row">';
+  html +=   '<span class="modal-detail-label">Location</span>';
+  html +=   '<span class="modal-detail-value">' + loc + '</span>';
+  html += '</div>';
+  html += '<div class="modal-detail-row">';
+  html +=   '<span class="modal-detail-label">Filed</span>';
+  html +=   '<span class="modal-detail-value muted">' + (report.created_at_display || '—') + '</span>';
+  html += '</div>';
+
+  /* Description */
+  html += '<div class="modal-section-label" style="margin-top:6px;">DESCRIPTION</div>';
+  html += '<div class="modal-desc-box">' + (report.description || '—') + '</div>';
+
+  /* Status timeline */
+  html += '<div class="modal-section-label" style="margin-top:6px;">STATUS TIMELINE</div>';
+  html += '<div class="modal-timeline">';
+
+  var timelineSteps = [
+    { status: 'active',        label: 'Report Filed',         dotClass: 'active-dot',   time: report.created_at_display },
+    { status: 'resolved',      label: 'Incident Resolved',     dotClass: 'success-dot',  time: report.resolved_at_display },
+  ];
+
+  var statusOrder = ['active','dispatched','onscene','investigating','resolved','cancelled'];
+  var currentIdx  = statusOrder.indexOf(report.status);
+
+  if (report.status === 'cancelled') {
+    html += '<div class="modal-timeline-item">';
+    html +=   '<div class="timeline-dot"></div>';
+    html +=   '<div><div class="modal-timeline-label">Report Cancelled</div>';
+    html +=   '<div class="modal-timeline-time">' + (report.created_at_display || '—') + '</div></div>';
+    html += '</div>';
+  } else {
+    timelineSteps.forEach(function(step, i) {
+      var stepIdx = statusOrder.indexOf(step.status);
+      var reached = stepIdx <= currentIdx;
+      var isCurrent = step.status === report.status;
+      html += '<div class="modal-timeline-item">';
+      html +=   '<div class="timeline-dot ' + (reached ? step.dotClass : '') + '"></div>';
+      html +=   '<div>';
+      html +=     '<div class="modal-timeline-label" style="color:' + (reached ? 'var(--white)' : 'var(--border)') + '">';
+      html +=       step.label + (isCurrent ? ' <span style="font-size:0.55rem;color:var(--gold);letter-spacing:0.15em;"> CURRENT</span>' : '');
+      html +=     '</div>';
+      if (reached && step.time) {
+        html += '<div class="modal-timeline-time">' + step.time + '</div>';
+      }
+      html +=   '</div>';
+      html += '</div>';
+    });
+  }
+
+  html += '</div>'; /* end timeline */
+
+  /* Cancel action inside modal (if cancellable) */
+  if (report.status === 'active' || report.status === 'investigating') {
+    html += '<div style="margin-top:4px;padding-top:14px;border-top:1px solid var(--border);">';
+    html += '<button class="report-action-btn cancel-btn" style="width:100%;justify-content:center;" onclick="closeViewModal();confirmCancel(\'' + report.id + '\')">';
+    html += '<span class="material-symbols-outlined mi-14" aria-hidden="true">cancel</span> CANCEL THIS REPORT</button>';
+    html += '</div>';
+  }
+
+  var bodyEl = document.getElementById('modalBody');
+  if (bodyEl) bodyEl.innerHTML = html;
+
+  /* Open modal */
+  document.getElementById('viewModal').classList.add('open');
+  document.getElementById('viewModalOverlay').classList.add('visible');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeViewModal() {
+  document.getElementById('viewModal').classList.remove('open');
+  document.getElementById('viewModalOverlay').classList.remove('visible');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('viewModalOverlay').addEventListener('click', closeViewModal);
+
+
+/* ============================================================
+   3. CANCEL MODAL
+   ============================================================ */
+function confirmCancel(id) {
+  cancelTargetId = id;
+  document.getElementById('cancelModal').classList.add('open');
+  document.getElementById('cancelModalOverlay').classList.add('visible');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeCancelModal() {
+  document.getElementById('cancelModal').classList.remove('open');
+  document.getElementById('cancelModalOverlay').classList.remove('visible');
+  if (!document.getElementById('viewModal').classList.contains('open')) {
+    document.body.style.overflow = '';
+  }
+  cancelTargetId = null;
+  var btn = document.getElementById('confirmCancelBtn');
+  if (btn) { btn.disabled = false; document.getElementById('cancelBtnLabel').textContent = 'CONFIRM CANCEL'; }
+}
+
+document.getElementById('cancelModalOverlay').addEventListener('click', closeCancelModal);
+
+function executeCancel() {
+  if (!cancelTargetId) return;
+
+  var btn   = document.getElementById('confirmCancelBtn');
+  var label = document.getElementById('cancelBtnLabel');
+  btn.disabled = true;
+  label.textContent = 'CANCELLING...';
+
+  var csrfToken = (document.cookie.split('; ').find(function(r){ return r.startsWith('csrftoken='); }) || '').split('=')[1];
+
+  fetch('/api/my-reports/' + cancelTargetId + '/cancel/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': csrfToken || '',
+    },
+    credentials: 'same-origin',
+  })
+  .then(function(res) { return res.json(); })
+  .then(function(data) {
+    if (data.success) {
+      /* Update card in UI */
+      var card = document.querySelector('.report-card[data-id="' + cancelTargetId + '"]');
+      if (card) {
+        card.dataset.status = 'cancelled';
+        card.style.borderLeftColor = 'var(--border)';
+        card.style.opacity = '0.6';
+
+        /* Update status badge */
+        var statusEl = card.querySelector('.inc-status');
+        if (statusEl) {
+          statusEl.className = 'inc-status cancelled';
+          statusEl.innerHTML = 'CANCELLED';
+        }
+
+        /* Remove cancel button */
+        var cancelBtn = card.querySelector('.cancel-btn');
+        if (cancelBtn) cancelBtn.remove();
+
+        /* Update report data map */
+        if (reportsMap[cancelTargetId]) {
+          reportsMap[cancelTargetId].status = 'cancelled';
+        }
+      }
+
+      /* Update stat counts */
+      updateStatCounts();
+      closeCancelModal();
+      showToast('Report cancelled successfully.', 'success');
+    } else {
+      throw new Error(data.error || 'Failed to cancel');
+    }
+  })
+  .catch(function(err) {
+    btn.disabled = false;
+    label.textContent = 'CONFIRM CANCEL';
+    showToast(err.message || 'Failed to cancel report. Please try again.', 'error');
+  });
+}
+
+
+/* ============================================================
+   4. STAT COUNT UPDATE
+   ============================================================ */
+function updateStatCounts() {
+  var counts = { total: 0, active: 0, resolved: 0, cancelled: 0 };
+  Object.values(reportsMap).forEach(function(r) {
+    counts.total++;
+    if (r.status === 'active' || r.status === 'dispatched' || r.status === 'onscene' || r.status === 'investigating') counts.active++;
+    if (r.status === 'resolved')  counts.resolved++;
+    if (r.status === 'cancelled') counts.cancelled++;
+  });
+  var t = document.getElementById('statTotal');
+  var a = document.getElementById('statActive');
+  var re= document.getElementById('statResolved');
+  var c = document.getElementById('statCancelled');
+  if (t) t.textContent = counts.total;
+  if (a) a.textContent = counts.active;
+  if (re) re.textContent = counts.resolved;
+  if (c) c.textContent = counts.cancelled;
+}
+
+
+/* ============================================================
+   6. KEYBOARD — ESC closes modals
+   ============================================================ */
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    if (document.getElementById('cancelModal').classList.contains('open')) closeCancelModal();
+    else if (document.getElementById('viewModal').classList.contains('open')) closeViewModal();
+  }
+});
+</script>
+{% endblock %}

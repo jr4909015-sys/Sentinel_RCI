@@ -1,0 +1,1137 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Report Incident — Sentinel{% endblock %}
+
+{% block content %}
+
+<!-- ── LAYOUT ── -->
+<div class="dash-layout livemap-layout">
+  {% include 'components/sidebar.html' with sidebar_incidents_badge=active_incidents_count %}
+
+  <div class="dash-main">
+    {% include 'components/topbar.html' %}
+
+    <div class="dash-content livemap-content">
+
+      <!-- Reporter prompt banner -->
+      <div class="reporter-banner">
+        <div class="reporter-banner-left">
+          <span class="reporter-banner-dot"></span>
+          <span class="reporter-banner-text">SELECT A LOCATION ON THE MAP TO FILE AN INCIDENT REPORT</span>
+        </div>
+        <div class="reporter-banner-right">
+          <span class="reporter-banner-hint">
+            <span class="material-symbols-outlined mi-14" aria-hidden="true">info</span>
+            Click any marker or tap "+" to add a new report
+          </span>
+        </div>
+      </div>
+
+      <div class="dash-mid-row livemap-row">
+        <div class="dash-panel dash-panel-map reveal livemap-panel">
+          <div class="panel-header">
+            <span class="panel-title">CAMPUS MAP — INCIDENT REPORTING</span>
+            <div class="panel-header-actions">
+              <span class="panel-live-tag"><span class="dot-live"></span> LIVE</span>
+              <button class="panel-btn" id="addReportBtn">
+                <span class="material-symbols-outlined mi-14" aria-hidden="true">add</span>
+                NEW REPORT
+              </button>
+            </div>
+          </div>
+
+          <div class="map-container livemap-map-container" id="reportMapContainer">
+            <div class="campus-image-map" id="campusMapReport">
+              <img src="{% static 'images/campus-map.png' %}" alt="Campus map"
+                   class="campus-map-image" id="campusMapImg" draggable="false">
+              <!-- Existing incident markers -->
+              <div id="reportMarkerLayer"></div>
+              <!-- Click target overlay — sits above markers so it captures all clicks -->
+              <div id="mapClickOverlay" class="map-click-overlay" title="Click to select location for report"></div>
+              <!-- Selected location pin (ghost) -->
+              <div id="selectedLocationPin" class="selected-location-pin" style="display:none;"></div>
+              <div class="map-click-hint" id="mapClickHint">
+                <span class="material-symbols-outlined mi-16" aria-hidden="true">touch_app</span>
+                Click on the map to set report location
+              </div>
+
+              <div class="map-legend">
+                <span class="legend-item"><span class="legend-dot danger"></span>Fire</span>
+                <span class="legend-item"><span class="legend-dot gold"></span>Medical</span>
+                <span class="legend-item"><span class="legend-dot sec"></span>Security</span>
+                <span class="legend-item"><span class="legend-dot accident"></span>Accident</span>
+              </div>
+            </div>
+            {{ dashboard_active_incidents|json_script:"dashboard-active-incidents" }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     REPORT DRAWER
+══════════════════════════════════════════════════════════════ -->
+<div class="report-drawer-overlay" id="reportDrawerOverlay"></div>
+
+<div class="report-drawer" id="reportDrawer">
+
+  <div class="drawer-topbar">
+    <div class="drawer-topbar-left">
+      <div class="drawer-topbar-icon">
+        <span class="material-symbols-outlined mi-16" aria-hidden="true">emergency</span>
+      </div>
+      <div>
+        <div class="drawer-title">FILE INCIDENT REPORT</div>
+        <div class="drawer-sub" id="drawerLocationSub">Select a location on the map</div>
+      </div>
+    </div>
+    <button class="drawer-close-btn" id="drawerCloseBtn" title="Close" aria-label="Close">
+      <span class="material-symbols-outlined mi-16" aria-hidden="true">close</span>
+    </button>
+  </div>
+
+  <div class="drawer-steps">
+    <div class="drawer-step active" data-step="1">
+      <span class="step-circle">1</span><span class="step-label">Type</span>
+    </div>
+    <div class="drawer-step-line"></div>
+    <div class="drawer-step" data-step="2">
+      <span class="step-circle">2</span><span class="step-label">Details</span>
+    </div>
+    <div class="drawer-step-line"></div>
+    <div class="drawer-step" data-step="3">
+      <span class="step-circle">3</span><span class="step-label">Confirm</span>
+    </div>
+  </div>
+
+  <div class="drawer-body" id="drawerBody">
+
+    <!-- STEP 1: Incident Type -->
+    <div class="drawer-section" id="drawerStep1">
+      <div class="drawer-section-label">INCIDENT TYPE</div>
+      <div class="incident-type-grid">
+        <button class="incident-type-card" data-type="fire" onclick="selectIncidentType(this,'fire')">
+          <span class="type-icon">
+            <span class="material-symbols-outlined mi-24" aria-hidden="true">local_fire_department</span>
+          </span>
+          <span class="type-name">FIRE</span>
+          <span class="type-desc">Active fire or smoke detected</span>
+          <span class="material-symbols-outlined mi-18 type-check" aria-hidden="true">check</span>
+        </button>
+        <button class="incident-type-card" data-type="med" onclick="selectIncidentType(this,'med')">
+          <span class="type-icon">
+            <span class="material-symbols-outlined mi-24" aria-hidden="true">medical_services</span>
+          </span>
+          <span class="type-name">MEDICAL</span>
+          <span class="type-desc">Injury or medical emergency</span>
+          <span class="material-symbols-outlined mi-18 type-check" aria-hidden="true">check</span>
+        </button>
+        <button class="incident-type-card" data-type="sec" onclick="selectIncidentType(this,'sec')">
+          <span class="type-icon">
+            <span class="material-symbols-outlined mi-24" aria-hidden="true">shield</span>
+          </span>
+          <span class="type-name">SECURITY</span>
+          <span class="type-desc">Suspicious activity or threat</span>
+          <span class="material-symbols-outlined mi-18 type-check" aria-hidden="true">check</span>
+        </button>
+        <button class="incident-type-card" data-type="accident" onclick="selectIncidentType(this,'accident')">
+          <span class="type-icon">
+            <span class="material-symbols-outlined mi-24" aria-hidden="true">warning</span>
+          </span>
+          <span class="type-name">ACCIDENT</span>
+          <span class="type-desc">Vehicular or physical accident</span>
+          <span class="material-symbols-outlined mi-18 type-check" aria-hidden="true">check</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- STEP 2: Location + Details -->
+    <div class="drawer-section" id="drawerStep2" style="display:none;">
+      <div class="drawer-section-label">LOCATION</div>
+      <div class="location-selected-box" id="locationSelectedBox">
+        <span class="material-symbols-outlined mi-16" aria-hidden="true">location_on</span>
+        <span id="locationSelectedText">No location selected — click map</span>
+        <button class="location-change-btn" id="locationChangeBtn">Change</button>
+      </div>
+
+      <div class="form-row">
+        <label class="drawer-label">SPECIFIC LOCATION</label>
+        <input type="text" class="drawer-input" id="specificLocationInput" placeholder="e.g. 'Library, 2nd floor near elevators'">
+      </div>
+
+      <div class="form-row">
+        <label class="drawer-label">BRIEF DESCRIPTION <span class="required-star">*</span></label>
+        <textarea class="drawer-textarea" id="incidentDescription" rows="4"
+          placeholder="Describe what you see. Include as much detail as possible — how many people involved, what is happening, any hazards present."></textarea>
+        <div class="char-counter"><span id="descCount">0</span>/300</div>
+      </div>
+
+    </div>
+
+    <!-- STEP 3: Confirm -->
+    <div class="drawer-section" id="drawerStep3" style="display:none;">
+      <div class="drawer-section-label">REVIEW &amp; SUBMIT</div>
+      <div class="confirm-card" id="confirmCard"></div>
+      <div class="report-error" id="reportError" style="display:none;"></div>
+      <div class="confirm-disclaimer">
+        <span class="material-symbols-outlined mi-14" aria-hidden="true">info</span>
+        By submitting, you confirm this report is accurate to the best of your knowledge. False reports may result in disciplinary action.
+      </div>
+      <div class="submit-success" id="submitSuccess" style="display:none;">
+        <div class="success-icon"><span class="material-symbols-outlined mi-24" aria-hidden="true">task_alt</span></div>
+        <div class="success-title">REPORT FILED</div>
+        <div class="success-sub">Your incident report has been submitted and authorities have been notified.</div>
+        <div class="success-id" id="mlResult" style="margin-top:8px;"></div>
+        <div class="success-id" id="successId"></div>
+        <button type="button" class="drawer-btn-primary" onclick="resetDrawer()" style="margin-top:16px;">FILE ANOTHER</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="drawer-footer" id="drawerFooter">
+    <button class="drawer-btn-ghost" id="drawerBackBtn" style="display:none;" onclick="drawerBack()"><span class="material-symbols-outlined mi-16" aria-hidden="true">arrow_back</span> BACK</button>
+    <button class="drawer-btn-primary" id="drawerNextBtn" onclick="drawerNext()" disabled>
+      <span id="drawerNextLabel">SELECT TYPE</span> <span class="material-symbols-outlined mi-16" aria-hidden="true">arrow_forward</span>
+    </button>
+  </div>
+
+</div>
+
+
+<style>
+/* ── Reporter Banner ── */
+.reporter-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  background: rgba(245,196,0,0.05);
+  border: 1px solid rgba(245,196,0,0.2);
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+}
+.reporter-banner-left { display:flex; align-items:center; gap:10px; color:var(--gold); text-transform:uppercase; }
+.reporter-banner-dot  { width:7px; height:7px; background:var(--gold); border-radius:50%; flex-shrink:0; animation:blink 1.2s step-end infinite; }
+.reporter-banner-right { color:var(--muted); }
+.reporter-banner-hint { display:flex; align-items:center; gap:6px; }
+
+/* ── Map overlay & pin ── */
+.map-click-overlay {
+  position: absolute;
+  inset: 0;
+  cursor: crosshair;
+  /* Keep the overlay beneath marker pins so existing incidents remain clickable. */
+  z-index: 2;
+}
+.map-click-overlay.selecting { background: rgba(245,196,0,0.04); }
+
+/* Existing incident markers must sit below the overlay;
+   we use pointer-events on the overlay to let marker clicks bubble up */
+#reportMarkerLayer .map-marker { z-index: 3; pointer-events: all; }
+
+.selected-location-pin {
+  position: absolute;
+  width: 32px; height: 32px;
+  transform: translate(-50%, -100%);
+  z-index: 10;
+  pointer-events: none;
+  animation: pinDrop 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes pinDrop {
+  from { transform:translate(-50%,-200%); opacity:0; }
+  to   { transform:translate(-50%,-100%); opacity:1; }
+}
+.selected-location-pin::before {
+  content:'';
+  position:absolute; top:4px; left:50%;
+  transform:translateX(-50%);
+  width:20px; height:20px;
+  border-radius:50%;
+  background:rgba(245,196,0,0.25);
+  border:2px solid var(--gold);
+  animation:pinPulse 1.5s ease-in-out infinite;
+}
+.selected-location-pin::after {
+  content:'+';
+  position:absolute; top:5px; left:50%;
+  transform:translateX(-50%);
+  font-size:14px; font-weight:700;
+  color:var(--gold); line-height:18px; z-index:2;
+}
+@keyframes pinPulse {
+  0%,100% { box-shadow:0 0 0 0 rgba(245,196,0,0.4); }
+  50%     { box-shadow:0 0 0 8px rgba(245,196,0,0); }
+}
+
+/* ── Map hint bar ── */
+.campus-image-map { position: relative; }
+.campus-image-map .map-click-hint {
+  position: absolute;
+  bottom: 40px;
+  left: 18px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px;
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  background: rgba(8, 4, 20, 0.88);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 999px;
+  text-transform: uppercase;
+  transition: color 0.3s, background 0.3s;
+  backdrop-filter: blur(10px);
+}
+.campus-image-map .map-click-hint svg {
+  color: var(--muted);
+}
+
+.campus-image-map .map-legend {
+  position: absolute;
+  bottom: 40px;
+  right: 18px;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 18px;
+  background: rgba(8, 4, 20, 0.88);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 999px;
+}
+
+/* ── Legend extras ── */
+.legend-dot.selected-dot {
+  background:var(--gold);
+  border:1px solid var(--gold);
+  box-shadow:0 0 5px rgba(245,196,0,0.5);
+}
+
+/* ══ REPORT DRAWER ══ */
+.report-drawer-overlay {
+  position:fixed; inset:0;
+  background:rgba(8,4,20,0.6);
+  backdrop-filter:blur(2px);
+  z-index:300; opacity:0; pointer-events:none;
+  transition:opacity 0.3s ease;
+}
+.report-drawer-overlay.visible { opacity:1; pointer-events:all; }
+
+.report-drawer {
+  position:fixed; top:0; right:0;
+  width:420px; max-width:100vw; height:100vh;
+  background:var(--surface);
+  border-left:1px solid var(--border);
+  z-index:400;
+  display:flex; flex-direction:column;
+  transform:translateX(100%);
+  transition:transform 0.35s cubic-bezier(0.4,0,0.2,1);
+  overflow:hidden;
+}
+.report-drawer.open { transform:translateX(0); }
+
+.drawer-topbar {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:18px 20px;
+  border-bottom:1px solid var(--border);
+  background:var(--bg); flex-shrink:0;
+}
+.drawer-topbar-left { display:flex; align-items:center; gap:12px; }
+.drawer-topbar-icon {
+  width:36px; height:36px;
+  background:rgba(245,196,0,0.1);
+  border:1px solid rgba(245,196,0,0.3);
+  display:flex; align-items:center; justify-content:center;
+  color:var(--gold); flex-shrink:0;
+}
+.drawer-title { font-family:'Syne',sans-serif; font-weight:800; font-size:0.85rem; letter-spacing:0.12em; color:var(--white); }
+.drawer-sub   { font-size:0.6rem; letter-spacing:0.1em; color:var(--muted); text-transform:uppercase; margin-top:2px; }
+.drawer-close-btn {
+  background:none; border:1px solid var(--border); color:var(--muted);
+  width:32px; height:32px;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:color 0.2s, border-color 0.2s;
+}
+.drawer-close-btn:hover { color:var(--danger); border-color:var(--danger); }
+
+.drawer-steps {
+  display:flex; align-items:center;
+  padding:14px 20px;
+  border-bottom:1px solid var(--border);
+  background:var(--surface2); flex-shrink:0; gap:0;
+}
+.drawer-step { display:flex; align-items:center; gap:7px; flex-shrink:0; }
+.step-circle {
+  width:22px; height:22px; border-radius:50%;
+  border:1px solid var(--border); color:var(--muted);
+  font-size:0.6rem; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+  transition:background 0.2s, border-color 0.2s, color 0.2s;
+}
+.drawer-step.active .step-circle { background:var(--gold); border-color:var(--gold); color:var(--bg); }
+.drawer-step.done   .step-circle { background:var(--success); border-color:var(--success); color:#fff; }
+.step-label { font-size:0.58rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); transition:color 0.2s; }
+.drawer-step.active .step-label { color:var(--gold); }
+.drawer-step.done   .step-label { color:var(--success); }
+.drawer-step-line   { flex:1; height:1px; background:var(--border); margin:0 10px; }
+
+.drawer-body {
+  flex:1; overflow-y:auto; padding:20px;
+  display:flex; flex-direction:column; gap:0;
+}
+.drawer-body::-webkit-scrollbar { width:4px; }
+.drawer-body::-webkit-scrollbar-track { background:var(--bg); }
+.drawer-body::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+.drawer-section { display:flex; flex-direction:column; gap:14px; }
+.drawer-section-label {
+  font-size:0.58rem; letter-spacing:0.25em; text-transform:uppercase; color:var(--muted);
+  padding-bottom:8px; border-bottom:1px solid var(--border); margin-bottom:4px;
+}
+
+/* Type cards */
+.incident-type-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.incident-type-card {
+  position:relative; background:var(--bg); border:1px solid var(--border);
+  padding:16px 14px; cursor:pointer; text-align:left;
+  display:flex; flex-direction:column; gap:4px;
+  transition:border-color 0.2s, background 0.2s; overflow:hidden;
+}
+.incident-type-card:hover { border-color:var(--muted); background:var(--surface2); }
+.incident-type-card.selected { border-color:var(--gold); background:rgba(245,196,0,0.05); }
+.incident-type-card.selected[data-type="fire"]     { border-color:var(--danger); background:rgba(255,68,68,0.06); }
+.incident-type-card.selected[data-type="med"]      { border-color:var(--gold);   background:rgba(245,196,0,0.06); }
+.incident-type-card.selected[data-type="sec"]      { border-color:#B394FF;       background:rgba(179,148,255,0.06); }
+.incident-type-card.selected[data-type="accident"] { border-color:#FF9500;       background:rgba(255,149,0,0.06); }
+.type-icon {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:36px;
+  height:36px;
+  margin-bottom:4px;
+  border-radius:12px;
+  background:rgba(255,255,255,0.04);
+  color:var(--muted);
+}
+.type-icon i {
+  font-size:1.15rem;
+}
+.incident-type-card[data-type="fire"] .type-icon {
+  color:var(--danger);
+  background:rgba(255,68,68,0.08);
+}
+.incident-type-card[data-type="med"] .type-icon {
+  color:var(--gold);
+  background:rgba(245,196,0,0.08);
+}
+.incident-type-card[data-type="sec"] .type-icon {
+  color:#B394FF;
+  background:rgba(179,148,255,0.08);
+}
+.incident-type-card[data-type="accident"] .type-icon {
+  color:#FF9500;
+  background:rgba(255,149,0,0.08);
+}
+.incident-type-card.selected[data-type="fire"] .type-icon {
+  background:rgba(255,68,68,0.16);
+}
+.incident-type-card.selected[data-type="med"] .type-icon {
+  background:rgba(245,196,0,0.16);
+}
+.incident-type-card.selected[data-type="sec"] .type-icon {
+  background:rgba(179,148,255,0.16);
+}
+.incident-type-card.selected[data-type="accident"] .type-icon {
+  background:rgba(255,149,0,0.16);
+}
+.type-icon svg {
+  width:100%;
+  height:100%;
+}
+.type-name { font-family:'Syne',sans-serif; font-weight:800; font-size:0.75rem; letter-spacing:0.08em; color:var(--white); }
+.type-desc { font-size:0.6rem; color:var(--muted); line-height:1.4; }
+.type-check {
+  position:absolute; top:8px; right:8px;
+  width:16px; height:16px;
+  background:var(--gold); color:var(--bg);
+  font-size:0.6rem; font-weight:900;
+  display:none; align-items:center; justify-content:center; border-radius:50%;
+}
+.incident-type-card.selected .type-check { display:flex; }
+.incident-type-card.selected[data-type="fire"]     .type-check { background:var(--danger); }
+.incident-type-card.selected[data-type="sec"]      .type-check { background:#B394FF; color:#fff; }
+.incident-type-card.selected[data-type="accident"] .type-check { background:#FF9500; }
+
+/* Form */
+.form-row { display:flex; flex-direction:column; gap:6px; }
+.drawer-label { font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted); }
+.required-star { color:var(--danger); }
+.optional-tag  { font-size:0.55rem; color:var(--border); letter-spacing:0.1em; font-style:italic; }
+.drawer-input, .drawer-select, .drawer-textarea {
+  background:var(--bg); border:1px solid var(--border); color:var(--white);
+  font-family:'IBM Plex Mono',monospace; font-size:0.78rem; padding:11px 14px;
+  outline:none; transition:border-color 0.2s; width:100%; -webkit-appearance:none;
+}
+.drawer-input:focus, .drawer-select:focus, .drawer-textarea:focus { border-color:var(--gold); }
+.drawer-select {
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237A6A9A' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 12px center; padding-right:36px; cursor:pointer;
+}
+.drawer-select option { background:var(--surface); }
+.drawer-textarea { resize:vertical; min-height:90px; line-height:1.6; }
+.char-counter { text-align:right; font-size:0.58rem; color:var(--border); margin-top:4px; font-family:'Syne Mono',monospace; }
+
+/* Location box */
+.location-selected-box {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 14px; background:var(--bg); border:1px solid var(--border);
+  font-size:0.7rem; color:var(--muted);
+}
+.location-selected-box svg { flex-shrink:0; color:var(--gold); }
+.location-selected-box.has-location { border-color:rgba(245,196,0,0.3); color:var(--white); }
+.location-change-btn {
+  margin-left:auto; background:none; border:1px solid var(--border);
+  color:var(--muted); font-family:'IBM Plex Mono',monospace;
+  font-size:0.58rem; letter-spacing:0.1em; padding:4px 10px;
+  cursor:pointer; text-transform:uppercase; transition:color 0.2s, border-color 0.2s; flex-shrink:0;
+}
+.location-change-btn:hover { color:var(--gold); border-color:var(--gold); }
+
+/* Severity */
+.severity-selector { display:flex; gap:0; border:1px solid var(--border); }
+.sev-btn {
+  flex:1; background:var(--bg); border:none;
+  border-right:1px solid var(--border);
+  color:var(--muted); font-family:'IBM Plex Mono',monospace;
+  font-size:0.58rem; letter-spacing:0.1em; padding:9px 4px;
+  cursor:pointer; text-transform:uppercase; transition:background 0.2s, color 0.2s;
+}
+.sev-btn:last-child { border-right:none; }
+.sev-btn:hover { background:var(--surface2); color:var(--white); }
+.sev-btn.active[data-sev="low"]      { background:rgba(76,175,80,0.15);  color:var(--success); }
+.sev-btn.active[data-sev="med"]      { background:rgba(245,196,0,0.15);  color:var(--gold); }
+.sev-btn.active[data-sev="high"]     { background:rgba(255,149,0,0.15);  color:#FF9500; }
+.sev-btn.active[data-sev="critical"] { background:rgba(255,68,68,0.15);  color:var(--danger); }
+.sev-btn.critical { color:var(--danger); }
+
+/* Confirm */
+.confirm-card { background:var(--bg); border:1px solid var(--border); padding:18px; display:flex; flex-direction:column; gap:12px; }
+.confirm-row  { display:flex; gap:10px; align-items:flex-start; font-size:0.72rem; }
+.confirm-row-label { font-size:0.58rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); flex-shrink:0; width:80px; margin-top:2px; }
+.confirm-row-value { color:var(--white); line-height:1.5; }
+.confirm-type-badge { font-size:0.58rem; font-weight:700; letter-spacing:0.1em; padding:3px 10px; text-transform:uppercase; }
+.confirm-disclaimer {
+  display:flex; gap:8px; align-items:flex-start;
+  font-size:0.62rem; color:var(--muted); line-height:1.6;
+  padding:12px 14px; background:var(--bg); border:1px solid var(--border);
+}
+.report-error {
+  padding:12px 14px;
+  margin-top:12px;
+  border:1px solid #FF5F5F;
+  background:rgba(255,95,95,0.08);
+  color:#FF5F5F;
+  border-radius:8px;
+  font-size:0.72rem;
+  line-height:1.5;
+}
+.confirm-disclaimer svg { flex-shrink:0; margin-top:2px; color:var(--gold); }
+
+/* Success */
+.submit-success { display:flex; flex-direction:column; align-items:center; gap:10px; padding:32px 20px; text-align:center; }
+.success-icon {
+  width:56px; height:56px;
+  background:rgba(76,175,80,0.1); border:2px solid var(--success); border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.5rem; color:var(--success);
+  animation:successPop 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes successPop { from{transform:scale(0);opacity:0;} to{transform:scale(1);opacity:1;} }
+.success-title { font-family:'Syne',sans-serif; font-weight:800; font-size:1.1rem; letter-spacing:0.1em; color:var(--success); }
+.success-sub   { font-size:0.72rem; color:var(--muted); line-height:1.6; max-width:280px; }
+.success-id    { font-family:'Syne Mono',monospace; font-size:0.68rem; color:var(--gold); background:rgba(245,196,0,0.08); border:1px solid rgba(245,196,0,0.2); padding:6px 14px; letter-spacing:0.15em; }
+
+/* Drawer footer */
+.drawer-footer { padding:16px 20px; border-top:1px solid var(--border); background:var(--bg); display:flex; gap:10px; flex-shrink:0; }
+.drawer-btn-primary {
+  flex:1; background:var(--gold); color:var(--bg);
+  font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:0.75rem;
+  letter-spacing:0.15em; text-transform:uppercase; padding:14px 20px;
+  border:none; cursor:pointer; transition:background 0.2s, transform 0.15s;
+}
+.drawer-btn-primary:hover:not(:disabled) { background:#FFD633; transform:translateY(-1px); }
+.drawer-btn-primary:disabled { opacity:0.4; cursor:not-allowed; }
+.drawer-btn-ghost {
+  background:none; border:1px solid var(--border); color:var(--muted);
+  font-family:'IBM Plex Mono',monospace; font-size:0.72rem; letter-spacing:0.1em;
+  padding:14px 18px; cursor:pointer; transition:border-color 0.2s, color 0.2s; text-transform:uppercase;
+}
+.drawer-btn-ghost:hover { border-color:var(--gold); color:var(--gold); }
+
+@media (max-width:600px) {
+  .report-drawer { width:100vw; }
+  .reporter-banner { flex-direction:column; align-items:flex-start; gap:6px; }
+  .incident-type-grid { grid-template-columns:1fr 1fr; }
+}
+
+.dash-content{
+  overflow-y: hidden !important;
+}
+</style>
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+/* ============================================================
+   REPORT PAGE SCRIPTS
+   extra_js fires at end of <body>, so DOM is ready.
+   We still gate on the map image load so the container
+   has real dimensions before we place markers.
+   ============================================================ */
+
+/* ── shared location data ── */
+var REPORT_LOCATION_MAP = {
+  'new building':  { left:'70%', top:'19%' },
+  'event center':  { left:'55%', top:'30%' },
+  'main building': { left:'28%', top:'54%' },
+  'gate':          { left:'52%', top:'94%' },
+  'flagpole':      { left:'43%', top:'69%' },
+  'basketball':    { left:'22%', top:'31%' },
+  'shs building':  { left:'21%', top:'18%' },
+  'garden':        { left:'10%', top:'22%' },
+  'canteen':       { left:'14%', top:'37%' },
+  'parking':       { left:'34%', top:'45%' },
+  'ched':          { left:'58%', top:'58%' },
+};
+
+/* snap-to lookup (key → human label) */
+var SNAP_LABELS = {
+  '70%|19%': 'New Building',
+  '55%|30%': 'Event Center',
+  '28%|54%': 'Main Building',
+  '52%|94%': 'Main Gate',
+  '43%|69%': 'Flagpole Area',
+  '22%|31%': 'Basketball Court',
+  '21%|18%': 'SHS Building',
+  '10%|22%': 'Garden',
+  '14%|37%': 'Canteen',
+  '34%|45%': 'Parking Area',
+  '58%|58%': 'CHED Office',
+};
+
+function reportNormalise(str) {
+  return (str || '').toLowerCase().replace(/[_\-]+/g,' ').replace(/[^a-z0-9\s]/g,'').trim();
+}
+
+function reportResolvePoint(location) {
+  var key = reportNormalise(location);
+  for (var label in REPORT_LOCATION_MAP) {
+    if (key.indexOf(label) !== -1) return REPORT_LOCATION_MAP[label];
+  }
+  return { left:'50%', top:'72%' };
+}
+
+function showSelectedLocationPin(left, top) {
+  var pin = document.getElementById('selectedLocationPin');
+  if (!pin) return;
+  pin.style.left = left;
+  pin.style.top = top;
+  pin.style.display = 'block';
+  pin.style.animation = 'none';
+  void pin.offsetWidth;
+  pin.style.animation = '';
+}
+
+function hideSelectedLocationPin() {
+  var pin = document.getElementById('selectedLocationPin');
+  if (!pin) return;
+  pin.style.display = 'none';
+}
+
+/* ============================================================
+   1. EXISTING INCIDENT MARKERS (read-only)
+   ============================================================ */
+function initReportMarkers() {
+  var dataEl = document.getElementById('dashboard-active-incidents');
+  var layer  = document.getElementById('reportMarkerLayer');
+  if (!dataEl || !layer) return;
+
+  var incidents = [];
+  try { incidents = JSON.parse(dataEl.textContent || '[]'); } catch(e) { return; }
+  if (!incidents.length) return;
+
+  var sevOrder = { fire:1, accident:2, med:3, sec:4 };
+  var grouped  = {};
+
+  incidents.forEach(function(inc) {
+    var label = (inc.location_display || inc.location || inc.specific_location || 'Unknown location').trim();
+    var pt    = reportResolvePoint(label);
+    var key   = pt.left + '|' + pt.top;
+    if (!grouped[key]) {
+      grouped[key] = { left:pt.left, top:pt.top, count:0, category:inc.category, label:label };
+    }
+    grouped[key].count += 1;
+    if ((sevOrder[inc.category]||10) < (sevOrder[grouped[key].category]||10)) {
+      grouped[key].category = inc.category;
+    }
+  });
+
+  Object.keys(grouped).forEach(function(key) {
+    var m  = grouped[key];
+    var el = document.createElement('div');
+    el.className      = 'map-marker ' + (m.category || 'sec');
+    el.style.left     = m.left;
+    el.style.top      = m.top;
+    el.style.position = 'absolute';
+    el.style.zIndex   = '3';
+
+    var badge = document.createElement('span');
+    badge.className   = 'marker-badge';
+    badge.textContent = m.count > 1 ? m.count : '';
+    if (m.count === 1) badge.style.display = 'none';
+
+    var tooltip = document.createElement('span');
+    tooltip.className   = 'map-marker-tooltip';
+    tooltip.textContent = m.count > 1 ? m.count + ' incidents at ' + m.label : m.label;
+
+    el.appendChild(badge);
+    el.appendChild(tooltip);
+
+    /* Clicking an existing marker pre-fills location in the drawer */
+    el.addEventListener('click', function(e) {
+      e.stopPropagation();   /* don't bubble to the overlay */
+      reportState.mapCoords     = { left: m.left, top: m.top };
+      reportState.locationLabel = m.label;
+      showSelectedLocationPin(m.left, m.top);
+      openDrawer('marker');
+    });
+
+    layer.appendChild(el);
+  });
+}
+
+/* Run markers after image load so container has real dimensions */
+(function() {
+  var img = document.getElementById('campusMapImg');
+  if (!img) { initReportMarkers(); return; }
+  if (img.complete) { initReportMarkers(); }
+  else {
+    img.addEventListener('load',  initReportMarkers);
+    img.addEventListener('error', initReportMarkers);
+  }
+})();
+
+
+/* ============================================================
+   2. REPORT STATE
+   ============================================================ */
+var reportState = {
+  step: 1, type: null, severity: 'med',
+  mapCoords: null, locationLabel: null,
+};
+var currentStep = 1;
+
+
+/* ============================================================
+   3. DRAWER OPEN / CLOSE
+   ============================================================ */
+function openDrawer(source) {
+  document.getElementById('reportDrawer').classList.add('open');
+  document.getElementById('reportDrawerOverlay').classList.add('visible');
+  document.body.style.overflow = 'hidden';
+
+  if (reportState.mapCoords) {
+    showSelectedLocationPin(reportState.mapCoords.left, reportState.mapCoords.top);
+  } else {
+    hideSelectedLocationPin();
+  }
+
+  if (reportState.locationLabel) {
+    var locText = document.getElementById('locationSelectedText');
+    var locBox  = document.getElementById('locationSelectedBox');
+    var sub     = document.getElementById('drawerLocationSub');
+    if (locText) locText.textContent = reportState.locationLabel;
+    if (locBox)  locBox.classList.add('has-location');
+    if (sub)     sub.textContent = reportState.locationLabel;
+  }
+}
+
+function closeDrawer() {
+  document.getElementById('reportDrawer').classList.remove('open');
+  document.getElementById('reportDrawerOverlay').classList.remove('visible');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('drawerCloseBtn').addEventListener('click', closeDrawer);
+document.getElementById('reportDrawerOverlay').addEventListener('click', closeDrawer);
+
+document.getElementById('addReportBtn').addEventListener('click', function() {
+  reportState.locationLabel = null;
+  reportState.mapCoords     = null;
+  hideSelectedLocationPin();
+  var sub = document.getElementById('drawerLocationSub');
+  if (sub) sub.textContent = 'Select a location on the map';
+  openDrawer('btn');
+});
+
+
+/* ============================================================
+   4. MAP CLICK → place pin + open drawer
+   ============================================================ */
+(function initMapClick() {
+  var overlay = document.getElementById('mapClickOverlay');
+  var pin     = document.getElementById('selectedLocationPin');
+  if (!overlay) return;
+
+  function snapToNearest(pctX, pctY) {
+    var minDist = Infinity, best = null;
+    for (var key in SNAP_LABELS) {
+      var parts = key.split('|');
+      var lx    = parseFloat(parts[0]);
+      var ly    = parseFloat(parts[1]);
+      var dist  = Math.hypot(pctX - lx, pctY - ly);
+      if (dist < minDist) { minDist = dist; best = { key:key, lx:lx, ly:ly }; }
+    }
+    if (best && minDist < 12) {
+      return { left: best.lx + '%', top: best.ly + '%', label: SNAP_LABELS[best.key] };
+    }
+    return {
+      left:  pctX.toFixed(1) + '%',
+      top:   pctY.toFixed(1) + '%',
+      label: 'Outside Campus (' + pctX.toFixed(0) + '%, ' + pctY.toFixed(0) + '%)',
+    };
+  }
+
+  overlay.addEventListener('click', function(e) {
+    var rect     = overlay.getBoundingClientRect();
+    var pctX     = (e.clientX - rect.left)  / rect.width  * 100;
+    var pctY     = (e.clientY - rect.top)   / rect.height * 100;
+    var resolved = snapToNearest(pctX, pctY);
+
+    /* place the ghost pin */
+    if (pin) {
+      pin.style.left    = resolved.left;
+      pin.style.top     = resolved.top;
+      pin.style.display = 'block';
+      /* re-trigger drop animation */
+      pin.style.animation = 'none';
+      void pin.offsetWidth;
+      pin.style.animation = '';
+    }
+
+    reportState.mapCoords     = { left: resolved.left, top: resolved.top };
+    reportState.locationLabel = resolved.label;
+
+    /* update select box if drawer already open */
+    var locText = document.getElementById('locationSelectedText');
+    var locBox  = document.getElementById('locationSelectedBox');
+    if (locText) locText.textContent = resolved.label;
+    if (locBox)  locBox.classList.add('has-location');
+
+    openDrawer('map');
+  });
+})();
+
+
+/* ============================================================
+   5. LOCATION "CHANGE" BUTTON
+   ============================================================ */
+document.getElementById('locationChangeBtn').addEventListener('click', function() {
+  closeDrawer();
+  var hint = document.getElementById('mapClickHint');
+  if (hint) {
+    hint.style.color      = 'var(--gold)';
+    hint.style.background = 'rgba(245,196,0,0.05)';
+    setTimeout(function() { hint.style.color = ''; hint.style.background = ''; }, 2500);
+  }
+});
+
+
+/* ============================================================
+   6. INCIDENT TYPE + SEVERITY SELECTORS
+   ============================================================ */
+function selectIncidentType(el, type) {
+  document.querySelectorAll('.incident-type-card').forEach(function(c) { c.classList.remove('selected'); });
+  el.classList.add('selected');
+  reportState.type = type;
+  document.getElementById('drawerNextBtn').disabled = false;
+  document.getElementById('drawerNextLabel').textContent = 'ADD DETAILS';
+}
+
+function selectSeverity(el, sev) {
+  document.querySelectorAll('.sev-btn').forEach(function(b) { b.classList.remove('active'); });
+  el.classList.add('active');
+  reportState.severity = sev;
+}
+
+
+/* ============================================================
+   7. DESCRIPTION CHAR COUNTER
+   ============================================================ */
+var descTextarea = document.getElementById('incidentDescription');
+if (descTextarea) {
+  descTextarea.addEventListener('input', function() {
+    this.value = this.value.slice(0, 300);
+    document.getElementById('descCount').textContent = this.value.length;
+    var counter = this.nextElementSibling;
+    if (counter) counter.style.color = this.value.length > 280 ? 'var(--danger)' : '';
+  });
+}
+
+
+/* NOTE: photo uploads were removed — the backend has no file storage.
+   The API rejects any 'photos' payload with HTTP 400. */
+
+/* ============================================================
+   9. STEP NAVIGATION
+   ============================================================ */
+function setStep(step) {
+  currentStep = step;
+
+  document.querySelectorAll('.drawer-step').forEach(function(el) {
+    var s = parseInt(el.dataset.step);
+    el.classList.remove('active','done');
+    if (s === step)    el.classList.add('active');
+    else if (s < step) el.classList.add('done');
+  });
+
+  document.getElementById('drawerStep1').style.display = step === 1 ? 'flex' : 'none';
+  document.getElementById('drawerStep2').style.display = step === 2 ? 'flex' : 'none';
+  document.getElementById('drawerStep3').style.display = step === 3 ? 'flex' : 'none';
+
+  document.getElementById('drawerBackBtn').style.display = step > 1 ? 'block' : 'none';
+
+  var labels = { 1:'ADD DETAILS', 2:'REVIEW', 3:'SUBMIT REPORT' };
+  document.getElementById('drawerNextLabel').textContent = labels[step] || 'NEXT';
+  document.getElementById('drawerNextBtn').disabled = false;
+
+  if (step === 3) buildConfirmCard();
+}
+
+function drawerNext() {
+  var errorEl = document.getElementById('reportError');
+  if (errorEl) {
+    errorEl.style.display = 'none';
+    errorEl.textContent = '';
+  }
+
+  if (currentStep === 1) {
+    if (!reportState.type) return;
+    setStep(2);
+  } else if (currentStep === 2) {
+    var desc = document.getElementById('incidentDescription').value.trim();
+    if (!desc) {
+      var ta = document.getElementById('incidentDescription');
+      ta.focus();
+      ta.style.borderColor = 'var(--danger)';
+      setTimeout(function() { ta.style.borderColor = ''; }, 2000);
+      return;
+    }
+    if (!reportState.locationLabel) {
+      var locBox = document.getElementById('locationSelectedBox');
+      if (locBox) {
+        locBox.style.borderColor = 'var(--danger)';
+        setTimeout(function() { locBox.style.borderColor = ''; }, 2000);
+      }
+      var errorEl = document.getElementById('reportError');
+      if (errorEl) {
+        errorEl.textContent = 'Please select a location on the map before continuing.';
+        errorEl.style.display = 'block';
+      }
+      return;
+    }
+    setStep(3);
+  } else if (currentStep === 3) {
+    submitReport();
+  }
+}
+
+function drawerBack() {
+  if (currentStep > 1) setStep(currentStep - 1);
+}
+
+
+/* ============================================================
+   10. CONFIRM CARD
+   ============================================================ */
+function buildConfirmCard() {
+  var typeLabels = { fire:'FIRE', med:'MEDICAL', sec:'SECURITY', accident:'ACCIDENT' };
+  var sevLabels  = { low:'Low', med:'Medium', high:'High', critical:'Critical' };
+  var sevColors  = { low:'var(--success)', med:'var(--gold)', high:'#FF9500', critical:'var(--danger)' };
+
+  var locDisplay = reportState.locationLabel || 'Not specified';
+  var desc       = (document.getElementById('incidentDescription').value || '').trim();
+  var specSel    = document.getElementById('specificLocationInput');
+  var specText   = specSel && specSel.value.trim() ? specSel.value.trim() : '—';
+
+  var html = '';
+
+  html += '<div class="confirm-row">' +
+    '<span class="confirm-row-label">Type</span>' +
+    '<span class="confirm-row-value">' +
+      '<span class="confirm-type-badge mock-badge ' + (reportState.type||'') + '">' +
+        (typeLabels[reportState.type] || '—') +
+      '</span>' +
+    '</span></div>';
+
+  var locFull = locDisplay + (specText && specText !== '— Select area —' ? ' — ' + specText : '');
+  html += '<div class="confirm-row"><span class="confirm-row-label">Location</span><span class="confirm-row-value">' + locFull + '</span></div>';
+
+  html += '<div class="confirm-row"><span class="confirm-row-label">Severity</span>' +
+    '<span class="confirm-row-value" style="color:' + (sevColors[reportState.severity]||'') + ';">' +
+      (sevLabels[reportState.severity] || 'Medium') +
+    '</span></div>';
+
+  html += '<div class="confirm-row"><span class="confirm-row-label">Description</span>' +
+    '<span class="confirm-row-value" style="color:var(--muted);">' + (desc || '—') + '</span></div>';
+
+  document.getElementById('confirmCard').innerHTML = html;
+}
+
+
+/* ============================================================
+   11. SUBMIT
+   ============================================================ */
+function submitReport() {
+  var btn = document.getElementById('drawerNextBtn');
+  btn.disabled = true;
+  document.getElementById('drawerNextLabel').textContent = 'SUBMITTING...';
+
+  var specSel = document.getElementById('specificLocationInput');
+  var desc    = document.getElementById('incidentDescription').value.trim();
+
+  var payload = {
+    category:          reportState.type,
+    severity:          reportState.severity,
+    description:       desc,
+    location:          reportState.locationLabel || '',
+    specific_location: specSel ? specSel.value.trim() : '',
+    map_left:          reportState.mapCoords ? reportState.mapCoords.left : '',
+    map_top:           reportState.mapCoords ? reportState.mapCoords.top  : '',
+  };
+
+  var csrfToken = (document.cookie.split('; ').find(function(r){ return r.startsWith('csrftoken='); }) || '').split('=')[1];
+
+  function showSuccess(data) {
+    document.getElementById('confirmCard').style.display = 'none';
+    document.querySelectorAll('.confirm-disclaimer').forEach(function(el) { el.style.display = 'none'; });
+    document.getElementById('submitSuccess').style.display = 'flex';
+    document.getElementById('drawerFooter').style.display  = 'none';
+    var idEl = document.getElementById('successId');
+    var incidentId = data && (data.id || (data.incident && data.incident.id));
+    if (idEl) {
+      if (incidentId) {
+        idEl.textContent = 'REPORT ID: #' + String(incidentId).slice(0,8).toUpperCase();
+      } else {
+        idEl.textContent = 'REPORT ID: #UNKNOWN';
+      }
+    }
+
+    var mlEl = document.getElementById('mlResult');
+    if (mlEl) {
+      if (data && data.ml_available) {
+        mlEl.textContent = 'ML: ' + (data.ml_label || data.ml_category || 'Unknown') +
+          ' — Confidence ' + Number(data.ml_confidence || 0).toFixed(2) + '%';
+      } else {
+        mlEl.textContent = 'ML: unavailable (report was still saved)';
+      }
+    }
+  }
+
+  fetch('{% url 'report_incident_api' %}', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'X-CSRFToken': csrfToken || ''
+    },
+    credentials: 'same-origin',
+    body: JSON.stringify(payload),
+  })
+  .then(function(res) {
+    if (!res.ok) {
+      return res.json().then(function(data) {
+        throw data || { error: 'Submission failed' };
+      });
+    }
+    return res.json();
+  })
+  .then(function(data) {
+    if (!data.success) {
+      throw data;
+    }
+    showSuccess(data);
+    showToast(data.message || 'Report submitted successfully.', 'success');
+  })
+  .catch(function(err) {
+    console.error('Submit error:', err);
+    btn.disabled = false;
+    document.getElementById('drawerNextLabel').textContent = 'SUBMIT REPORT';
+    var message = 'Failed to submit report. Please try again.';
+    if (err && err.errors) {
+      message = Object.values(err.errors).join(' ');
+    } else if (err && err.error) {
+      message = err.error;
+    }
+    var errorEl = document.getElementById('reportError');
+    if (errorEl) {
+      errorEl.textContent = message;
+      errorEl.style.display = 'block';
+    }
+    showToast(message, 'error');
+  });
+}
+
+
+/* ============================================================
+   12. RESET
+   ============================================================ */
+function resetDrawer() {
+  reportState = { step:1, type:null, severity:'med', mapCoords:null, locationLabel:null };
+
+  document.querySelectorAll('.incident-type-card').forEach(function(c) { c.classList.remove('selected'); });
+  document.querySelectorAll('.sev-btn').forEach(function(b) { b.classList.remove('active'); });
+  var defaultSeverity = document.querySelector('.sev-btn[data-sev="med"]');
+  if (defaultSeverity) {
+    defaultSeverity.classList.add('active');
+  }
+
+  document.getElementById('incidentDescription').value  = '';
+  document.getElementById('descCount').textContent      = '0';
+  document.getElementById('specificLocationInput').value = '';
+
+  document.getElementById('confirmCard').style.display   = 'block';
+  document.getElementById('submitSuccess').style.display = 'none';
+  document.getElementById('drawerFooter').style.display  = 'flex';
+  document.querySelectorAll('.confirm-disclaimer').forEach(function(el) { el.style.display = 'flex'; });
+  var errorEl = document.getElementById('reportError');
+  if (errorEl) {
+    errorEl.style.display = 'none';
+    errorEl.textContent = '';
+  }
+
+  var pin = document.getElementById('selectedLocationPin');
+  if (pin) pin.style.display = 'none';
+  document.getElementById('locationSelectedText').textContent = 'No location selected — click map';
+  document.getElementById('locationSelectedBox').classList.remove('has-location');
+
+  setStep(1);
+  document.getElementById('drawerNextBtn').disabled = true;
+  document.getElementById('drawerNextLabel').textContent = 'SELECT TYPE';
+  document.getElementById('drawerBackBtn').style.display = 'none';
+
+  var sub = document.getElementById('drawerLocationSub');
+  if (sub) sub.textContent = 'Select a location on the map';
+}
+</script>
+
+{% endblock %}
