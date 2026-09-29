@@ -1042,7 +1042,8 @@ function submitReport() {
         mlEl.textContent = 'ML: ' + (data.ml_label || data.ml_category || 'Unknown') +
           ' — Confidence ' + Number(data.ml_confidence || 0).toFixed(2) + '%';
       } else {
-        mlEl.textContent = 'ML: unavailable (report was still saved)';
+  mlEl.textContent = '';
+}
       }
     }
   }
