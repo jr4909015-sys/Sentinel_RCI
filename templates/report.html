@@ -224,8 +224,9 @@
   position: absolute;
   inset: 0;
   cursor: crosshair;
-  /* Keep the overlay beneath marker pins so existing incidents remain clickable. */
-  z-index: 2;
+  z-index: 10;
+  pointer-events: auto;
+  touch-action: none;
 }
 .map-click-overlay.selecting { background: rgba(245,196,0,0.04); }
 
