@@ -152,10 +152,34 @@
     <div class="drawer-section" id="drawerStep2" style="display:none;">
       <div class="drawer-section-label">LOCATION</div>
       <div class="location-selected-box" id="locationSelectedBox">
-        <span class="material-symbols-outlined mi-16" aria-hidden="true">location_on</span>
-        <span id="locationSelectedText">No location selected — click map</span>
-        <button class="location-change-btn" id="locationChangeBtn">Change</button>
-      </div>
+  <span class="material-symbols-outlined mi-16" aria-hidden="true">location_on</span>
+
+  <span id="locationSelectedText">
+    No location selected — click map or use GPS
+  </span>
+
+  <button type="button" class="location-gps-btn" id="useMyLocationBtn">
+    <span class="material-symbols-outlined mi-14" aria-hidden="true">my_location</span>
+    USE MY LOCATION
+  </button>
+
+  <button type="button" class="location-change-btn" id="locationChangeBtn">
+    Change
+  </button>
+</div>
+
+<div id="gpsStatus"
+     style="
+       display:none;
+       margin-top:8px;
+       padding:8px 10px;
+       border:1px solid var(--border);
+       background:var(--bg);
+       color:var(--muted);
+       font-size:0.62rem;
+       line-height:1.5;
+     ">
+</div>
 
       <div class="form-row">
         <label class="drawer-label">SPECIFIC LOCATION</label>
@@ -503,7 +527,33 @@
   font-size:0.58rem; letter-spacing:0.1em; padding:4px 10px;
   cursor:pointer; text-transform:uppercase; transition:color 0.2s, border-color 0.2s; flex-shrink:0;
 }
-.location-change-btn:hover { color:var(--gold); border-color:var(--gold); }
+.location-gps-btn {
+  display:flex;
+  align-items:center;
+  gap:5px;
+  margin-left:auto;
+  background:rgba(245,196,0,0.08);
+  border:1px solid rgba(245,196,0,0.35);
+  color:var(--gold);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.55rem;
+  letter-spacing:0.08em;
+  padding:5px 9px;
+  cursor:pointer;
+  text-transform:uppercase;
+  transition:background 0.2s, border-color 0.2s;
+  flex-shrink:0;
+}
+
+.location-gps-btn:hover {
+  background:rgba(245,196,0,0.15);
+  border-color:var(--gold);
+}
+
+.location-gps-btn:disabled {
+  opacity:0.5;
+  cursor:wait;
+}
 
 /* Severity */
 .severity-selector { display:flex; gap:0; border:1px solid var(--border); }
@@ -732,19 +782,144 @@ function initReportMarkers() {
 })();
 
 
-/* ============================================================
-   2. REPORT STATE
-   ============================================================ */
+  
 var reportState = {
-  step: 1, type: null, severity: 'med',
-  mapCoords: null, locationLabel: null,
+  step: 1,
+  type: null,
+  severity: 'med',
+  mapCoords: null,
+  locationLabel: null,
+
+  // GPS LOCATION
+  latitude: null,
+  longitude: null,
+  locationAccuracy: null,
+  gpsLocationLabel: null
 };
 var currentStep = 1;
 
+function useMyLocation() {
+  var btn = document.getElementById('useMyLocationBtn');
+  var status = document.getElementById('gpsStatus');
+  var locationText = document.getElementById('locationSelectedText');
+  var locationBox = document.getElementById('locationSelectedBox');
 
-/* ============================================================
-   3. DRAWER OPEN / CLOSE
-   ============================================================ */
+  if (!navigator.geolocation) {
+    if (status) {
+      status.style.display = 'block';
+      status.style.color = 'var(--danger)';
+      status.textContent =
+        'GPS/location is not supported by this browser.';
+    }
+    return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML =
+      '<span class="material-symbols-outlined mi-14">gps_fixed</span> LOCATING...';
+  }
+
+  if (status) {
+    status.style.display = 'block';
+    status.style.color = 'var(--gold)';
+    status.textContent = 'Getting your current location...';
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    function(position) {
+      var latitude = position.coords.latitude;
+      var longitude = position.coords.longitude;
+      var accuracy = position.coords.accuracy;
+
+      reportState.latitude = latitude;
+      reportState.longitude = longitude;
+      reportState.locationAccuracy = accuracy;
+      reportState.gpsLocationLabel = 'GPS LOCATION';
+
+      if (!reportState.locationLabel) {
+        reportState.locationLabel = 'GPS Location';
+      }
+
+      if (locationText) {
+        locationText.textContent =
+          'GPS: ' +
+          latitude.toFixed(6) +
+          ', ' +
+          longitude.toFixed(6);
+      }
+
+      if (locationBox) {
+        locationBox.classList.add('has-location');
+      }
+
+      if (status) {
+        status.style.display = 'block';
+        status.style.color = 'var(--success)';
+        status.textContent =
+          'GPS location acquired. Accuracy: approximately ' +
+          Math.round(accuracy) +
+          ' meters.';
+      }
+
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML =
+          '<span class="material-symbols-outlined mi-14">my_location</span> USE MY LOCATION';
+      }
+
+      console.log('GPS LOCATION:', {
+        latitude: latitude,
+        longitude: longitude,
+        accuracy: accuracy
+      });
+    },
+    function(error) {
+      var message = 'Unable to get your location.';
+
+      if (error.code === error.PERMISSION_DENIED) {
+        message =
+          'Location permission was denied. Please allow location access in your browser.';
+      } else if (error.code === error.POSITION_UNAVAILABLE) {
+        message =
+          'Your location is currently unavailable. Please try again.';
+      } else if (error.code === error.TIMEOUT) {
+        message =
+          'Location request timed out. Please try again.';
+      }
+
+      if (status) {
+        status.style.display = 'block';
+        status.style.color = 'var(--danger)';
+        status.textContent = message;
+      }
+
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML =
+          '<span class="material-symbols-outlined mi-14">my_location</span> USE MY LOCATION';
+      }
+
+      console.error('GPS ERROR:', error);
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 0
+    }
+  );
+}
+
+var useMyLocationBtn =
+  document.getElementById('useMyLocationBtn');
+
+if (useMyLocationBtn) {
+  useMyLocationBtn.addEventListener(
+    'click',
+    useMyLocation
+  );
+}
+
 function openDrawer(source) {
   document.getElementById('reportDrawer').classList.add('open');
   document.getElementById('reportDrawerOverlay').classList.add('visible');
@@ -1011,15 +1186,28 @@ function submitReport() {
   var desc    = document.getElementById('incidentDescription').value.trim();
 
   var payload = {
-    category:          reportState.type,
-    severity:          reportState.severity,
-    description:       desc,
-    location:          reportState.locationLabel || '',
-    specific_location: specSel ? specSel.value.trim() : '',
-    map_left:          reportState.mapCoords ? reportState.mapCoords.left : '',
-    map_top:           reportState.mapCoords ? reportState.mapCoords.top  : '',
-  };
+  category: reportState.type,
+  severity: reportState.severity,
+  description: desc,
+  location: reportState.locationLabel || '',
+  specific_location: specSel
+    ? specSel.value.trim()
+    : '',
 
+  // Existing campus map position
+  map_left: reportState.mapCoords
+    ? reportState.mapCoords.left
+    : '',
+
+  map_top: reportState.mapCoords
+    ? reportState.mapCoords.top
+    : '',
+
+  // GPS LOCATION
+  latitude: reportState.latitude,
+  longitude: reportState.longitude,
+  location_accuracy: reportState.locationAccuracy
+};
   var csrfToken = (document.cookie.split('; ').find(function(r){ return r.startsWith('csrftoken='); }) || '').split('=')[1];
 
   function showSuccess(data) {
@@ -1049,7 +1237,7 @@ function submitReport() {
     }
   }
 
-  fetch('{% url 'report_incident_api' %}', {
+  fetch("{% url 'report_incident_api' %}", {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -1091,14 +1279,40 @@ function submitReport() {
     }
     showToast(message, 'error');
   });
-}
+
 
 
 /* ============================================================
    12. RESET
    ============================================================ */
 function resetDrawer() {
-  reportState = { step:1, type:null, severity:'med', mapCoords:null, locationLabel:null };
+reportState = {
+  step: 1,
+  type: null,
+  severity: 'med',
+  mapCoords: null,
+  locationLabel: null,
+
+  latitude: null,
+  longitude: null,
+  locationAccuracy: null,
+  gpsLocationLabel: null
+};
+
+var gpsStatus = document.getElementById('gpsStatus');
+
+if (gpsStatus) {
+  gpsStatus.style.display = 'none';
+  gpsStatus.textContent = '';
+}
+
+var locationSelectedText =
+  document.getElementById('locationSelectedText');
+
+if (locationSelectedText) {
+  locationSelectedText.textContent =
+    'No location selected — click map or use GPS';
+}
 
   document.querySelectorAll('.incident-type-card').forEach(function(c) { c.classList.remove('selected'); });
   document.querySelectorAll('.sev-btn').forEach(function(b) { b.classList.remove('active'); });

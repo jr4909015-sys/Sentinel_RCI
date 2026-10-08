@@ -584,54 +584,90 @@ def report_incident_api(request):
         return JsonResponse({"error": "Unauthorized"}, status=403)
 
     try:
-        payload = json.loads(request.body.decode('utf-8') or '{}')
+        payload = json.loads(request.body.decode("utf-8") or "{}")
     except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON"}, status=400)
+        return JsonResponse({"success": False, "error": "Invalid JSON"}, status=400)
 
     valid_categories = {c for c, _ in Incident.Category.choices}
-    category = str(payload.get('category') or '').strip()
-    description = str(payload.get('description') or '').strip()
-    location = str(payload.get('location') or '').strip() or str(payload.get('location_display') or '').strip()
-    specific_location = str(payload.get('specific_location') or '').strip()
-    severity = str(payload.get('severity') or '').strip()
 
-    # Photo uploads are not supported by the backend (no storage wired).
-    # The report UI no longer sends them; reject them explicitly if present.
-    if payload.get('photos'):
-        return JsonResponse({"success": False, "error": "Photo uploads are not supported."}, status=400)
+    category = str(payload.get("category") or "").strip()
+    description = str(payload.get("description") or "").strip()
+    location = (
+        str(payload.get("location") or "").strip()
+        or str(payload.get("location_display") or "").strip()
+    )
+    specific_location = str(payload.get("specific_location") or "").strip()
+    severity = str(payload.get("severity") or "").strip()
+
+    # GPS LOCATION
+    latitude = payload.get("latitude")
+    longitude = payload.get("longitude")
+    location_accuracy = payload.get("location_accuracy")
+
+    # Photo uploads are not supported by the backend.
+    if payload.get("photos"):
+        return JsonResponse(
+            {"success": False, "error": "Photo uploads are not supported."},
+            status=400,
+        )
 
     errors = {}
+
     if not category:
-        errors['category'] = 'Incident type is required.'
+        errors["category"] = "Incident type is required."
     elif category not in valid_categories:
-        errors['category'] = 'Invalid incident type.'
+        errors["category"] = "Invalid incident type."
+
     if not description:
-        errors['description'] = 'Description is required.'
+        errors["description"] = "Description is required."
     elif len(description) > 2000:
-        errors['description'] = 'Description must be at most 2000 characters.'
+        errors["description"] = "Description must be at most 2000 characters."
+
     if not location:
-        errors['location'] = 'Location is required.'
+        errors["location"] = "Location is required."
     elif len(location) > 255:
-        errors['location'] = 'Location must be at most 255 characters.'
+        errors["location"] = "Location must be at most 255 characters."
+
     if len(specific_location) > 255:
-        errors['specific_location'] = 'Specific location must be at most 255 characters.'
+        errors["specific_location"] = "Specific location must be at most 255 characters."
+
     if len(severity) > 50:
-        errors['severity'] = 'Severity must be at most 50 characters.'
+        errors["severity"] = "Severity must be at most 50 characters."
+
+    # Validate GPS values when supplied, but keep GPS optional so reporting
+    # still works on browsers/devices that deny location permission.
+    try:
+        if latitude not in (None, ""):
+            latitude = float(latitude)
+            if not -90 <= latitude <= 90:
+                errors["latitude"] = "Invalid latitude."
+        else:
+            latitude = None
+
+        if longitude not in (None, ""):
+            longitude = float(longitude)
+            if not -180 <= longitude <= 180:
+                errors["longitude"] = "Invalid longitude."
+        else:
+            longitude = None
+
+        if location_accuracy not in (None, ""):
+            location_accuracy = float(location_accuracy)
+            if location_accuracy < 0:
+                errors["location_accuracy"] = "Invalid location accuracy."
+        else:
+            location_accuracy = None
+    except (TypeError, ValueError):
+        errors["location"] = "Invalid GPS location data."
 
     if errors:
         return JsonResponse({"success": False, "errors": errors}, status=400)
 
-    # Machine-learning classification is used as decision support.
-    # The reporter's selected category is preserved; the ML prediction and
-    # confidence are stored in operator_notes so the existing database schema
-    # remains compatible.
-    ml_result = None
+    # Machine-learning classification is decision support only.
+    # The reporter's selected category remains the official incident category.
     try:
         ml_result = classify_incident(description)
     except Exception as ml_error:
-        # Do not block emergency reporting if the ML model is temporarily
-        # unavailable. The incident can still be logged using the reporter's
-        # selected category.
         ml_result = {
             "category": None,
             "label": "Unavailable",
@@ -642,19 +678,24 @@ def report_incident_api(request):
         }
 
     note_parts = []
+
     if severity:
         note_parts.append("Severity: %s" % severity)
+
     if ml_result.get("category"):
         note_parts.append(
-            "ML Classification: %s (%s)" %
-            (ml_result["label"], ml_result["category"])
+            "ML Classification: %s (%s)" % (
+                ml_result["label"],
+                ml_result["category"],
+            )
         )
         note_parts.append(
-            "ML Confidence: %.2f%%" % ml_result["confidence_percent"]
+            "ML Confidence: %.2f%%" % ml_result.get("confidence_percent", 0.0)
         )
         note_parts.append("Reporter Selected Type: %s" % category)
     else:
         note_parts.append("ML Classification: unavailable")
+
     operator_notes = "\n".join(note_parts) or None
 
     try:
@@ -663,6 +704,9 @@ def report_incident_api(request):
             description=description,
             location=location,
             specific_location=specific_location,
+            latitude=latitude,
+            longitude=longitude,
+            location_accuracy=location_accuracy,
             operator_notes=operator_notes,
             reported_by=request.user,
             status=Incident.Status.ACTIVE,
@@ -680,13 +724,19 @@ def report_incident_api(request):
                 "description": description,
                 "location": location,
                 "specific_location": specific_location,
+                "latitude": latitude,
+                "longitude": longitude,
+                "location_accuracy": location_accuracy,
                 "severity": severity,
                 "ml_category": ml_result.get("category"),
                 "ml_confidence": ml_result.get("confidence_percent"),
-            }
+            },
         )
     except Exception:
-        return JsonResponse({"success": False, "error": "Unable to save the incident. Please try again."}, status=500)
+        return JsonResponse(
+            {"success": False, "error": "Unable to save the incident. Please try again."},
+            status=500,
+        )
 
     return JsonResponse({
         "success": True,
@@ -699,11 +749,14 @@ def report_incident_api(request):
             "desc": inc.description,
             "location": inc.location,
             "specific_location": inc.specific_location,
+            "latitude": float(inc.latitude) if inc.latitude is not None else None,
+            "longitude": float(inc.longitude) if inc.longitude is not None else None,
+            "location_accuracy": inc.location_accuracy,
             "ml_category": ml_result.get("category"),
             "ml_label": ml_result.get("label"),
             "ml_confidence": ml_result.get("confidence_percent"),
             "ml_available": bool(ml_result.get("category")),
-        }
+        },
     })
 
 @login_required(login_url="login")
@@ -808,6 +861,9 @@ def incidents_api(request):
             'status': inc.status,
             'location': inc.location or '',
             'specific_location': inc.specific_location or '',
+            'latitude': float(inc.latitude) if inc.latitude is not None else None,
+            'longitude': float(inc.longitude) if inc.longitude is not None else None,
+            'location_accuracy': inc.location_accuracy,
             'time': inc.created_at.strftime('%H:%M'),
             'timeRaw': int(inc.created_at.timestamp() * 1000),
             'resolvedAtRaw': int(inc.resolved_at.timestamp() * 1000) if inc.resolved_at else None,

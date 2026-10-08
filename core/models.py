@@ -71,6 +71,7 @@ encryptor = SimpleEncryptor()
 # 📍 INCIDENT MODEL
 # =========================
 class Incident(models.Model):
+
     class Category(models.TextChoices):
         FIRE = "fire", "Fire"
         MEDICAL = "med", "Medical"
@@ -86,12 +87,30 @@ class Incident(models.Model):
         CANCELLED = "cancelled", "Cancelled"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-
     category = models.CharField(max_length=20, choices=Category.choices)
     description = models.TextField(blank=True, null=True)
-
     location = models.CharField(max_length=255, blank=True, null=True)
     specific_location = models.CharField(max_length=255, blank=True, null=True)
+
+    # GPS LOCATION
+    latitude = models.DecimalField(
+        max_digits=10,
+        decimal_places=7,
+        null=True,
+        blank=True
+    )
+
+    longitude = models.DecimalField(
+        max_digits=10,
+        decimal_places=7,
+        null=True,
+        blank=True
+    )
+
+    location_accuracy = models.FloatField(
+        null=True,
+        blank=True
+    )
 
     reported_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -121,6 +140,7 @@ class Incident(models.Model):
     # =========================
     # 🔐 PII HANDLING
     # =========================
+
     def mark_resolved(self, resolved_by=None):
         self.status = self.Status.RESOLVED
         self.resolved_at = timezone.now()
