@@ -177,3 +177,12 @@ AUTH_USER_MODEL = "core.User"
 FIELD_ENCRYPTION_KEY = os.environ.get("FIELD_ENCRYPTION_KEY", "")
 LOGIN_URL = "login"
 LOGOUT_REDIRECT_URL = "login"
+# --- Sentinel RCI production security settings ---
+# Keep local development usable; enable these controls when DEBUG=False.
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", "3600"))
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
