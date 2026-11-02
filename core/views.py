@@ -1318,9 +1318,9 @@ def users_api(request):
     if User.objects.filter(username=username).exists():
         return JsonResponse({"error": "Username already taken."}, status=400)
     if User.objects.filter(email=email).exists():
-        return JsonResponse({"error": "Email already registered."}, status=400)
+        return JsonResponse({"error": "This email address already exists."}, status=400)
     if User.objects.filter(student_id=student_id).exists():
-        return JsonResponse({"error": "Student ID already registered."}, status=400)
+        return JsonResponse({"error": "This Student ID already exists."}, status=400)
     if len(body["password"]) < 8:
         return JsonResponse({"error": "Password must be at least 8 characters."}, status=400)
     if not re.match(r'^[a-zA-Z][a-zA-Z0-9._%+\-]*@[a-zA-Z0-9\-]+\.[a-zA-Z]{2,}$', email):
@@ -1398,7 +1398,7 @@ def user_detail_api(request, user_id):
         if new_username != u.username and User.objects.filter(username=new_username).exists():
             return JsonResponse({"error": "Username already taken."}, status=400)
         if new_email != u.email and User.objects.filter(email=new_email).exists():
-            return JsonResponse({"error": "Email already registered."}, status=400)
+            return JsonResponse({"error": "This email address already exists."}, status=400)
 
         new_role = str(body.get("role", u.role) or u.role).strip().lower()
         if new_role not in (User.Role.REPORTER, User.Role.ADMIN):

@@ -182,13 +182,13 @@ class RegistrationForm(UserCreationForm):
     def clean_student_id(self):
         student_id = (self.cleaned_data.get("student_id") or "").strip()
         if User.objects.filter(student_id=student_id).exists():
-            raise ValidationError("A user with this student ID already exists.")
+            raise ValidationError("This Student ID already exists.")
         return student_id
 
     def clean_email(self):
         email = (self.cleaned_data.get("email") or "").strip()
         if User.objects.filter(email=email).exists():
-            raise ValidationError("A user with this email already exists.")
+            raise ValidationError("This email address already exists.")
         return email
 
     def clean_username(self):

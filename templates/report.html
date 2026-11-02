@@ -1235,7 +1235,6 @@ function submitReport() {
 }
       }
     }
-  }
 
   fetch("{% url 'report_incident_api' %}", {
     method: 'POST',
@@ -1279,8 +1278,7 @@ function submitReport() {
     }
     showToast(message, 'error');
   });
-
-
+}
 
 /* ============================================================
    12. RESET
